@@ -1,0 +1,1475 @@
+/**
+ * Game Library — shared front-end styles.
+ *
+ * Imported by one entry of its own, `src/js/style.js`, which compiles to
+ * build/style.css + build/style-rtl.css and is enqueued under a single
+ * `gamelib-style` handle on every plugin surface (PF-2). The three behaviour
+ * bundles emit no CSS: importing this from each of them produced three
+ * byte-identical stylesheets under three URLs, so a member moving between plugin
+ * routes re-downloaded the whole base layer each time.
+ *
+ * Token discipline: the plugin registers its own values under
+ * settings.custom.gamelib.* (GameLib_Tokens, DD-011), which WordPress emits as
+ * --wp--custom--gamelib--*. Every reference below carries a literal fallback
+ * (Always Do #13) — the plugin must still render correctly on a site whose
+ * global stylesheet is disabled, and a var() with no fallback drops the whole
+ * declaration. The $gamelib-* Sass maps exist so a hue is written once and its
+ * fallback cannot drift from the token it backs.
+ *
+ * Colors other than the plugin's own token set are deliberately absent: the
+ * surface inherits the theme's text and background, which is what keeps the
+ * templates theme-agnostic (D-REQ-41).
+ *
+ * DEFERRED, deliberately (DES-18): nine rules below declare an identical
+ * `align-items: center; display: flex; flex-wrap: wrap; gap: sm` cluster and
+ * fifteen declare `display: flex; flex-direction: column` with a gap step. Two
+ * `.gamelib-cluster` / `.gamelib-stack` primitives would collapse ~24 rules —
+ * but only by adding a class to every element that carries one of them, which
+ * means editing all nine templates plus the two PHP renderers, in a fix pass
+ * whose other twenty-five items are behavioural. It is a deliberate,
+ * self-contained change and belongs in its own commit, not folded into this one.
+ * Recorded here so the next reader does not re-derive it.
+ */
+
+@use "sass:map";
+
+// Status hues, mirroring GameLib_Tokens::tokens(). Each is a badge background
+// paired with the white foreground below; every pairing clears 4.5:1.
+$gamelib-status-colors: (
+	playing: #2563eb,
+	finished: #15803d,
+	backlog: #b45309,
+	wishlist: #7c3aed,
+);
+
+// Result-feedback hues, same source.
+$gamelib-feedback-colors: (
+	success: #15803d,
+	error: #b91c1c,
+	warning: #b45309,
+);
+
+// Visibility-state hues, same source.
+$gamelib-visibility-colors: (
+	members: #475569,
+	public: #0f766e,
+);
+
+// The type scale, mirroring GameLib_Tokens::tokens()'s `fontSize` group.
+$gamelib-font-sizes: (
+	xs: 0.75rem,
+	sm: 0.875rem,
+	md: 1rem,
+	lg: 1.125rem,
+);
+
+// The spacing scale, mirroring the `space` group. Word keys only: WordPress
+// kebab-cases each key, so `2xl` would land as `--…--space--2-xl`.
+$gamelib-space: (
+	xxs: 0.125rem,
+	xs: 0.25rem,
+	sm: 0.5rem,
+	md: 0.75rem,
+	lg: 1rem,
+	xl: 1.5rem,
+	xxl: 2rem,
+);
+
+// Control sizing, mirroring the `control` group. Its own group rather than a
+// step of `space`: `min` is the AC-NFR-004(c) hit-area floor, and a site
+// retuning the density scale must not be able to shrink a WCAG minimum with it
+// (DES-19).
+$gamelib-control: (
+	min: 2rem,
+	checkbox: 1.5rem,
+);
+
+// The measures, mirroring the `measure` group (DES-19). Every constrained width
+// in this sheet comes from here, so a site can retune the plugin's widths from
+// its own theme.json exactly as it can its colours and its type.
+$gamelib-measures: (
+	page: 62rem,
+	form: 30rem,
+	card: 11rem,
+	field: 12rem,
+	launcher: 14rem,
+	cover: 16.5rem,
+	thumb: 5rem,
+	// The search-result reservation (DES-2): the six skeleton rows
+	// `templates/my-library.php` clones in, plus five `space--lg` row gaps.
+	//
+	// Folded from the row as it *paints*, not from a sum of the tokens that feed
+	// it (PF-4). A result row is `display: flex`, so its height is
+	// max(media, body) and the body is what drives it (PF-2) — but the body is a
+	// stack of line boxes, and a line box is the active theme's line-height
+	// applied to a font-size step, not the step itself. Measured on the booted
+	// instance under Twenty Twenty-Five: a skeleton row paints 109.58px
+	// (~6.85rem) against a 106.66px real row — the media box, because on this
+	// theme the body is the *shorter* column. Six rows plus five 1rem gaps is
+	// 6 x 6.85 + 5 x 1 = 46.1rem, and the skeleton list paints 737.47px.
+	//
+	// 47.75rem is therefore a deliberate ~26.5px over-reservation, kept because
+	// over-reserving is the safe direction: the floor absorbs the difference,
+	// which is what makes the 1-result and 6-result swaps land at 0px. What
+	// defends it is the painted-vs-token gate in
+	// `tests/e2e/specs/gamelib-a11y.spec.ts` — the skeleton must paint within
+	// +/-10% of this token, and currently sits at 0.965 — not this arithmetic.
+	// Retuning either font-size step, `control--min`, `thumb` or `cover-aspect`
+	// moves the painted row, and that gate is what says so.
+	results: 47.75rem,
+);
+
+// A step of the type scale, as a token reference with its literal fallback
+// (Always Do #13). Every font-size below goes through here, so the literal is
+// written once per step and a site can retune the plugin's density from its own
+// theme.json (DES-4).
+@function gamelib-font-size($gamelib-step) {
+
+	@return var(--wp--custom--gamelib--font-size--#{$gamelib-step}, #{map.get($gamelib-font-sizes, $gamelib-step)});
+}
+
+// A step of the spacing scale, same contract as gamelib-font-size().
+@function gamelib-space($gamelib-step) {
+
+	@return var(--wp--custom--gamelib--space--#{$gamelib-step}, #{map.get($gamelib-space, $gamelib-step)});
+}
+
+// A control dimension, same contract again (DES-19).
+@function gamelib-control($gamelib-step) {
+
+	@return var(--wp--custom--gamelib--control--#{$gamelib-step}, #{map.get($gamelib-control, $gamelib-step)});
+}
+
+// A measure, same contract again (DES-19).
+@function gamelib-measure($gamelib-step) {
+
+	@return var(--wp--custom--gamelib--measure--#{$gamelib-step}, #{map.get($gamelib-measures, $gamelib-step)});
+}
+
+// Every dimension below is written as if it included padding and border,
+// because that is the only way `min-block-size: 2rem` on .gamelib-control can
+// mean "at least 32px tall" (AC-NFR-004c). Without this the box model is
+// whatever the active theme last set, and the same control measured 32px, 40px
+// and 44px on three surfaces of one page.
+.gamelib,
+.gamelib *,
+.gamelib *::before,
+.gamelib *::after {
+	box-sizing: border-box;
+}
+
+/*
+ * The page measure belongs to the plugin's *own* documents only (DES-11).
+ *
+ * `.gamelib` also lands on the wrapper `GameLib_Game_CPT::render_game()` injects
+ * through `the_content`, where the theme already owns the measure — and both
+ * selectors were specificity 0-1-0, so the plugin's 62rem beat the theme's
+ * constrained-layout rule on source order alone. Measured on Twenty
+ * Twenty-Five at 1280px: the theme's content column was 645px and the injected
+ * block painted 992px, starting 174px to its left.
+ *
+ * `templates/parts/document-open.php` — the opening half of every plugin-owned
+ * document, and nothing else — puts `gamelib-document` on `<body>`, so this is
+ * exactly "a plugin-owned document"; a game page is the one plugin surface the
+ * theme renders, and it inherits the theme's own measure like every other block
+ * on it.
+ *
+ * A class, not `[class*="gamelib-route-"]` (DES-5): a substring match over
+ * `body_class()` output fires for any theme or plugin class merely *containing*
+ * the string — `no-gamelib-route-notice` would have imposed the plugin's 62rem
+ * on a surface DES-11 scoped it away from. Same 0-2-0 specificity either way.
+ */
+.gamelib-document .gamelib {
+	margin-inline: auto;
+	max-inline-size: gamelib-measure(page);
+	padding-inline: gamelib-space(lg);
+}
+
+.gamelib__header {
+	padding-block: gamelib-space(xl) gamelib-space(sm);
+}
+
+.gamelib__section {
+	padding-block-end: gamelib-space(xxl);
+}
+
+// Every interactive control inherits a visible focus ring. currentcolor rather
+// than a plugin hue: the ring has to stay visible on whatever background the
+// active theme paints (AC-NFR-004b).
+.gamelib :focus-visible {
+	outline: 2px solid currentcolor;
+	outline-offset: 2px;
+}
+
+// `hidden` has to beat whatever `display` a component class sets — the toolbar,
+// the pager, and the in-flight search state are all flex containers the bundle
+// toggles by attribute, and a single-class `display: flex` otherwise overrides
+// the user agent's `[hidden] { display: none }`.
+.gamelib [hidden] {
+	display: none;
+}
+
+.gamelib-skip-link {
+	background-color: Canvas;
+	color: CanvasText;
+	inset-block-start: 0;
+	inset-inline-start: 0;
+	padding: gamelib-space(sm) gamelib-space(lg);
+	position: absolute;
+	transform: translateY(-100%);
+}
+
+// The plugin's first tab stop sits at the top-left of the initial containing
+// block — which on a logged-in page is underneath core's fixed 32px admin bar
+// (z-index 99999, unreachable from a plugin stylesheet). /my-library/,
+// /my-library/imports/{id}/ and /activity/ are logged-in-only, so the link was
+// always occluded there: WCAG 2.2 SC 2.4.11, which axe cannot detect.
+// Core emits --wp-admin--admin-bar--height on the front end only when the bar
+// renders, so the 0 fallback leaves logged-out routes exactly as they were.
+.gamelib-skip-link:focus {
+	inset-block-start: var(--wp-admin--admin-bar--height, 0);
+	transform: translateY(0);
+	z-index: 100;
+}
+
+// Hidden from sight, kept in the accessibility tree.
+.gamelib-visually-hidden {
+	block-size: 1px;
+	clip-path: inset(50%);
+	inline-size: 1px;
+	margin: -1px;
+	overflow: hidden;
+	padding: 0;
+	position: absolute;
+	white-space: nowrap;
+}
+
+/*
+ * Baseline hit area for every plugin control (AC-NFR-004c: >= 24x24 CSS px).
+ * box-sizing is restated here as well as in the scoped reset above, because a
+ * control also renders inside REST fragments a caller may place outside
+ * `.gamelib` — the floor has to hold wherever the class lands.
+ *
+ * The floor and the button chrome are two rules, not one (DES-16). Conflating
+ * them is what stopped `<input>` and `<select>` elements from composing this
+ * class at all — `display: inline-flex` on a replaced element is meaningless
+ * and the transition is button-only — so the form input restated four of these
+ * declarations verbatim and the 24px floor had two definitions that could
+ * drift. Everything below is safe on any element; the chrome rule that follows
+ * is scoped to the elements it means something for.
+ */
+.gamelib-control {
+	border-radius: var(--wp--custom--gamelib--radius, 4px);
+	box-sizing: border-box;
+	min-block-size: gamelib-control(min);
+	min-inline-size: gamelib-control(min);
+	padding: gamelib-space(xs) gamelib-space(md);
+}
+
+/*
+ * The button half: centring a label inside the hit area, and the hover
+ * transition. `<input type="file">` clears the same floor from the rule above,
+ * because its own hit target is the shadow button the user agent paints inside
+ * it (DES-13).
+ *
+ * `:where()` is what keeps the element filter out of the specificity (DES-3).
+ * `button.gamelib-control, a.gamelib-control` was 0-1-1, which is why the
+ * reduced-motion override below had to repeat both tag-qualified selectors
+ * verbatim to turn one declaration off; inside `:where()` the element names
+ * contribute nothing, so this rule is a plain 0-1-0 single class and any later
+ * rule on `.gamelib-control` wins on source order, as the naming rule intends.
+ *
+ * Not a `.gamelib-control--button` modifier, which is the other way to reach
+ * 0-1-0: that would put the invariant "every button/anchor control also carries
+ * the modifier" in the hands of ~38 emission sites across nine templates and two
+ * PHP renderers, where a new control that forgets it silently renders without
+ * its chrome. The element filter cannot be forgotten. See
+ * principal/adr/033-element-filter-instead-of-a-button-modifier.md.
+ */
+:where(button, a).gamelib-control {
+	align-items: center;
+	display: inline-flex;
+	justify-content: center;
+	transition:
+		background-color var(--wp--custom--gamelib--transition--duration, 150ms)
+		var(--wp--custom--gamelib--transition--easing, ease-out);
+}
+
+/*
+ * The pointer half of that affordance (DES-5).
+ *
+ * Focus is handled — `:focus-visible`, `currentcolor`, a forced-colors ring —
+ * but a mouse user had no feedback on any of the ~38 control sites until they
+ * clicked: `grep ':hover\|:active'` over this sheet returned nothing, while the
+ * transition above declared a background-color animation whose only consumer was
+ * the `aria-checked`/`aria-pressed` flip that lands after a server round trip.
+ * A transition with no hover rule reads as evidence of one that got lost.
+ *
+ * `color-mix` on `currentcolor` rather than a hue, which is the same
+ * theme-agnostic idiom the selected chip, the card media placeholder and the
+ * status tint already use: the plugin introduces no colour of its own here, so
+ * the tint inverts with the theme instead of vanishing on a dark surface (DES-5,
+ * cycle-1).
+ *
+ * `background-image`, not `background-color` (DES-2). This plugin deliberately
+ * sets no idle background on a control, so 43 of its 44 control sites are
+ * `<button>`s idling at the user agent's `buttonface`. A `background-color`
+ * *replaces* that, and 8% of the inherited text colour composited on a white page
+ * is so close to `buttonface` that the change is arithmetically present and
+ * visually absent: pixel-sampled #efefef idle against #ebebeb hovered, a contrast
+ * ratio of 1.048:1. A one-colour gradient is an *image*, so it composites over
+ * whatever the user agent or the theme has already put there (#efefef -> ~#d3d3d3
+ * at 12%) while still leaving an `<a>`'s transparent idle state working as it
+ * does today, and the plugin still owns no idle background. Any future check on
+ * this rule has to sample painted pixels — the version that shipped and failed
+ * passed `getComputedStyle`.
+ *
+ * The `transition` on the rule above is deliberately not extended to cover this:
+ * it belongs to the `aria-checked`/`aria-pressed` flip, which is a real
+ * `background-color` change, and a gradient does not interpolate from `none`.
+ *
+ * `@media (hover: hover)` keeps it off touch, where a sticky hover state after a
+ * tap is worse than none. `:where()` on the element filter for the same reason
+ * the rule above uses it (ADR-033): this stays 0-1-0 plus the pseudo-class.
+ */
+@media (hover: hover) {
+
+	:where(button, a).gamelib-control:hover {
+		background-image: linear-gradient(
+			color-mix(in oklab, currentcolor 12%, transparent) 0 0
+		);
+	}
+}
+
+.gamelib-grid {
+	display: grid;
+	gap: gamelib-space(lg);
+	grid-template-columns: repeat(auto-fill, minmax(gamelib-measure(card), 1fr));
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+/*
+ * A page of the grid is 24 cards and most of them are below the fold, so the
+ * off-screen ones are skipped until they approach the viewport (PF-10).
+ * contain-intrinsic-size is mandatory, not optional: without a placeholder size
+ * the scrollbar resizes as skipped content renders, which is a scroll-jank
+ * regression rather than a win. The `auto` keyword means the real size is
+ * remembered once a card has rendered, so the estimate only ever matters for
+ * the first pass — and 27.75rem is the measured height of a rendered card, where
+ * the 22rem this started at under-estimated it by ~20% (DES-14). The quarter-rem
+ * is the three `space--xs` gaps `.gamelib-card__body` gained in DES-2; both
+ * reservations here were measured against a card whose text rows were flush.
+ *
+ * The padding is not decoration: `content-visibility: auto` turns on paint
+ * containment unconditionally, which clips descendant painting to the container
+ * box, and the shared focus ring is `outline: 2px` at `outline-offset: 2px` —
+ * 4px outside the element. A control flush against the card's edge therefore
+ * had 4px of its ring clipped. One space step (0.25rem = 4px) is exactly the
+ * ring's reach. Same rule for every other container carrying containment below.
+ */
+.gamelib-card {
+	contain-intrinsic-size: auto 27.75rem;
+	content-visibility: auto;
+	display: flex;
+	flex-direction: column;
+	gap: gamelib-space(sm);
+	padding: gamelib-space(xs);
+}
+
+/*
+ * A card rendered without the owner's controls is a different height, and needs
+ * its own placeholder (PF-3).
+ *
+ * `templates/parts/game-card.php` gates the whole `.gamelib-card__controls`
+ * block on its `controls` flag, which `GameLib_REST_Social` deliberately does
+ * not pass (AC-031c) — so a card on /members/{nicename}/ has no bulk-select row,
+ * no four-button status radiogroup and no Remove. Measured at 303.86px, plus the
+ * two `space--xs` gaps its three text rows gained in DES-2 — 19.5rem against the
+ * owner card's 27.75rem, and the missing 8rem is the `.gamelib-card__controls`
+ * column: its `space--xs` top padding, the wrapped status group, a `space--sm`
+ * gap and the Remove button's `control--min` floor. Reserving the owner's height
+ * for it made every unrendered row of the plugin's one logged-out,
+ * field-measured surface over-reserve on the first scroll pass, which is the
+ * same scrollbar jank the placeholder exists to prevent, in the other direction.
+ *
+ * `tests/e2e/specs/gamelib-profile-feed.spec.ts` asserts both against the cards
+ * they stand for — the read-only one on a profile, the owner one on
+ * /my-library/ — so a row added to or removed from either fails a gate rather
+ * than silently mis-reserving.
+ */
+.gamelib-card--readonly {
+	contain-intrinsic-size: auto 19.5rem;
+}
+
+/*
+ * The first row of cards is deliberately eager (PF-2) because one of its covers
+ * is the LCP element, so gating that subtree's rendering on the first relevance
+ * check is two optimizations working against each other (PF-4). The flag the
+ * part already emits turns containment off for exactly those cards.
+ *
+ * AFTER `--readonly`, and the order is load-bearing (PF-4): on
+ * /members/{nicename}/ the first four cards carry *both* modifiers —
+ * `templates/profile.php` marks indices 0-3 priority, and
+ * `GameLib_REST_Social` passes no controls, so `parts/game-card.php` adds
+ * read-only as well. Both rules are 0-1-0, so whichever is later wins
+ * `contain-intrinsic-size`, and this one has to: an eager card is opted out of
+ * containment altogether, and a placeholder size for a card that is never
+ * size-contained is not a smaller estimate, it is a contradiction. It was inert
+ * while `content-visibility: visible` carried the opt-out on its own; it stops
+ * being inert the moment either declaration is touched.
+ */
+.gamelib-card--priority {
+	contain-intrinsic-size: none;
+	content-visibility: visible;
+}
+
+// Fixed ratio so a card reserves its space before the cover resolves — no
+// layout shift, with or without an image (AC-014a).
+// The placeholder tint derives from the inherited text colour rather than being
+// a black wash: on a dark theme, black over a dark surface is invisible (DES-5).
+.gamelib-card__media {
+	aspect-ratio: var(--wp--custom--gamelib--cover-aspect, 3 / 4);
+	background-color: color-mix(in oklab, currentcolor 8%, transparent);
+	border-radius: var(--wp--custom--gamelib--radius, 4px);
+	overflow: hidden;
+}
+
+.gamelib-card__image {
+	block-size: 100%;
+	display: block;
+	inline-size: 100%;
+	object-fit: cover;
+}
+
+/*
+ * The card's text column (DES-2).
+ *
+ * `.gamelib-card` is a flex column with exactly two children — the media box and
+ * this — so its own `space--sm` gap is spent once, between them, and never
+ * between the rows inside here; every element in this column declares
+ * `margin: 0`. Measured on /my-library/ and /members/{nicename}/ before this
+ * rule existed: title, badge, added-date and controls all shared 0px
+ * boundaries.
+ *
+ * `space--xs` rather than the card's own `space--sm`: the badge is the title's
+ * annotation and reads as belonging to it, which a half-step keeps true. Both
+ * are steps of the same scale.
+ *
+ * NOTE for the deferred `.gamelib-stack` primitive (DES-18): this is a
+ * sixteenth column rule, and it is the one that makes the count worth
+ * collapsing.
+ */
+.gamelib-card__body {
+	display: flex;
+	flex-direction: column;
+	gap: gamelib-space(xs);
+}
+
+.gamelib-card__title {
+	font-size: gamelib-font-size(md);
+	margin: 0;
+}
+
+.gamelib-card__meta {
+	font-size: gamelib-font-size(sm);
+	margin: 0;
+}
+
+.gamelib-badge {
+	border-radius: var(--wp--custom--gamelib--radius, 4px);
+	color: var(--wp--custom--gamelib--status-foreground, #fff);
+	display: inline-block;
+	font-size: gamelib-font-size(xs);
+	line-height: 1.5;
+	padding: gamelib-space(xxs) gamelib-space(sm);
+}
+
+// One token group writes into the `.gamelib-badge--*` namespace, and only the
+// four statuses are ever emitted (`templates/parts/game-card.php`). The
+// visibility branch that used to be generated here emitted nothing and wrote
+// into the same modifier namespace from a second group — a fifth status named
+// after a visibility state would have silently taken the wrong hue (DES-8).
+// Visibility has its own consumed `.gamelib-visibility__option--*` loop below.
+@each $gamelib-status, $gamelib-hue in $gamelib-status-colors {
+	.gamelib-badge--#{$gamelib-status} {
+		background-color: var(--wp--custom--gamelib--status--#{$gamelib-status}, #{$gamelib-hue});
+	}
+}
+
+// AC-008: the search surface — field, in-flight state, and results. The results
+// list reuses the card media box so a thumbnail reserves its space too.
+.gamelib-search__field {
+	display: flex;
+	flex-direction: column;
+	gap: gamelib-space(xs);
+	max-inline-size: gamelib-measure(form);
+}
+
+.gamelib-search__label,
+.gamelib-library__label {
+	font-size: gamelib-font-size(sm);
+}
+
+.gamelib-search__row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: gamelib-space(sm);
+}
+
+.gamelib-search__input {
+	flex: 1 1 gamelib-measure(field);
+	min-inline-size: 0;
+}
+
+/*
+ * The results container sits between the search box and the grid, and a response
+ * writes up to 20 rows into it (PF-1). Nothing reserved that space, so a landing
+ * result set pushed ~2,400px of page down — an impact fraction of ~0.6–0.8 at a
+ * distance clamped to 1.0, which is one interaction taking CLS from Good to
+ * well past Poor. It only escaped the metric when the response landed inside the
+ * 500ms `hadRecentInput` window, and an uncached IGDB round trip is budgeted at
+ * 3s (AC-NFR-005).
+ *
+ * What holds the space *while the request is out* is the skeleton itself: six
+ * cloned rows, ~720px, written into the container synchronously inside the
+ * click. This floor is for the other side of the swap — it is what stops the
+ * container collapsing when the response is shorter than the skeleton, which is
+ * every AC-009 empty state, every AC-010 degraded state (one
+ * `<p class="gamelib-state">`, ~22px) and every result set under six rows. A
+ * floor scoped to the result list alone therefore missed exactly the cases it
+ * was needed for: measured at 696px (headless Chromium) and 682px (booted
+ * Playground) of collapse, ~3s after the gesture and so outside
+ * `hadRecentInput`, for a CLS of ~0.45 on one interaction.
+ *
+ * `:has(> *)` — any child at all — and deliberately not an enumeration of the
+ * state classes: a third one landing later must not be able to switch the floor
+ * back off, which is this defect for the second time. The idle first paint has
+ * no children and therefore no floor, so an untouched page still renders with
+ * the grid immediately below the search box.
+ *
+ * `:has()` rather than `:not(:empty)`, which only worked because
+ * `templates/my-library.php` authors the container with no whitespace between
+ * its tags — one added newline would have silently switched the whole
+ * reservation off.
+ *
+ * `align-content: start` is what a *short* answer lands in (DES-1). Centring was
+ * tried first and is backwards: the shorter the answer, the further down the box
+ * it pushed it — measured against the skeleton's own first row, a three-result
+ * list dropped 192.75px and the one-sentence AC-009 state dropped 349.53px,
+ * which reads as "the search did nothing" in an otherwise empty column. Pinning
+ * to the top is correct because the top of that box is where the member is
+ * already looking, and it puts the held space *below* the answer, where blank
+ * space reads as "nothing further" rather than "something is still coming".
+ * CLS is 0 either way — layout shift does not score element replacement, so the
+ * metric structurally cannot see this and a screenshot is what caught it.
+ */
+.gamelib-search__results:has(> *) {
+	align-content: start;
+	display: grid;
+	min-block-size: gamelib-measure(results);
+}
+
+/*
+ * One skeleton row, and it carries no height of its own (PF-1/DES-1, PF-2).
+ *
+ * Both of its columns compose the classes a real result's do — the media
+ * placeholder is `gamelib-card__media`, and the body is a `gamelib-result__body`
+ * holding a `gamelib-result__title`, two `gamelib-result__meta` lines and a
+ * `gamelib-result__add` — so the row resolves its height from exactly the tokens
+ * the row it stands in for resolves: `measure--thumb` and `cover-aspect` on one
+ * side, the two font-size steps, `control--min` and `space--xs` on the other.
+ * There is no number here to keep in sync with the real row.
+ *
+ * That matters because a real row is `display: flex`: its height is
+ * max(media, body), and the body is the taller of the two the moment a title
+ * wraps, a platform list wraps, or the "In your library" line renders. A
+ * skeleton that measured only the media column under-reserved by 44–194px on a
+ * six-result response — a shift landing ~3s after the gesture, outside
+ * `hadRecentInput`.
+ *
+ * The floor covers only the degenerate case of a site setting `cover-aspect`
+ * wider than square, where the media box would be shorter than the column it
+ * sits in.
+ */
+.gamelib-result--pending {
+	min-block-size: gamelib-measure(thumb);
+}
+
+/*
+ * The placeholder bars inside a pending row. Literal dimensions for the same
+ * reason `.gamelib-search__shimmer`'s are (DES-19): decoration sized to look
+ * like a title, a meta line and an add control, not measures a site would want
+ * to retune.
+ *
+ * `inline-block` with `vertical-align: middle` is what keeps them decoration
+ * (PF-2). Inside a `.gamelib-result__title` or `.gamelib-result__meta` wrapper
+ * the height comes from that wrapper's own line box — the same line box the real
+ * row's `<h3>` and `<p>` produce from the same font-size step — and a bar
+ * centred on the baseline cannot grow it past the strut. So retuning a bar
+ * changes how the placeholder looks and never what it reserves.
+ */
+.gamelib-result__shimmer {
+	block-size: 0.75rem;
+	display: inline-block;
+	inline-size: 10rem;
+	vertical-align: middle;
+}
+
+.gamelib-result__shimmer--meta {
+	inline-size: 5rem;
+}
+
+// The add row's bar is a flex child of `.gamelib-result__add`, so it is
+// blockified and its `block-size` does apply — deliberately, because that row's
+// height is a control floor rather than a line box: the same `control--min` the
+// real row's status select and Add button clear (PF-2).
+.gamelib-result__shimmer--action {
+	block-size: gamelib-control(min);
+	inline-size: 8rem;
+}
+
+.gamelib-search__loading {
+	align-items: center;
+	display: flex;
+	gap: gamelib-space(sm);
+	margin-block: gamelib-space(md);
+}
+
+/*
+ * The in-flight state keeps its box in both states (PF-1).
+ *
+ * The bundle reveals it inside the click/Enter gesture and hides it again in the
+ * `finally`, up to 3s later — so the reveal is excused by `hadRecentInput` and
+ * the collapse, ~45px of it, is not. `visibility` instead of the shared
+ * `.gamelib [hidden] { display: none }` leaves the paragraph laid out, so the
+ * space it holds is by construction exactly the space it occupies when visible:
+ * no number to keep in sync, and nothing moves on the swap. It stays out of the
+ * accessibility tree either way.
+ *
+ * Both rules are 0-2-0 — one class plus one attribute each — and this one is 300
+ * lines later, so it wins on source order, which is the sheet's naming rule
+ * (DES-4). The `.gamelib ` prefix this carried bought nothing but a 0-3-0 rule
+ * and a comment claiming a specificity ladder that does not exist.
+ */
+.gamelib-search__loading[hidden] {
+	display: flex;
+	visibility: hidden;
+}
+
+/*
+ * Keeping the box costs the decoration inside it: the shimmer in this paragraph
+ * is stopped while it is hidden (PF-3). The rule lives beside `.gamelib-shimmer`
+ * itself, at the foot of this sheet, because it is one of the two conditions
+ * that turn that animation off and they belong together.
+ */
+
+// DES-17: a step of the plugin's own scale rather than the theme's body size.
+.gamelib-search__loading-text {
+	font-size: gamelib-font-size(sm);
+}
+
+// The two shimmer dimensions are deliberately literal: a placeholder bar is
+// decoration sized to look like a word, not a measure a site would want to
+// retune (DES-19).
+.gamelib-search__shimmer {
+	block-size: 0.75rem;
+	inline-size: 6rem;
+}
+
+.gamelib-results {
+	display: flex;
+	flex-direction: column;
+	gap: gamelib-space(lg);
+	list-style: none;
+	margin-block: gamelib-space(lg) 0;
+	padding: 0;
+}
+
+.gamelib-result {
+	display: flex;
+	gap: gamelib-space(lg);
+}
+
+.gamelib-result__media {
+	flex: 0 0 gamelib-measure(thumb);
+}
+
+.gamelib-result__body {
+	display: flex;
+	flex-direction: column;
+	gap: gamelib-space(xs);
+	min-inline-size: 0;
+}
+
+.gamelib-result__title {
+	font-size: gamelib-font-size(md);
+	margin: 0;
+}
+
+.gamelib-result__meta,
+.gamelib-result__owned {
+	font-size: gamelib-font-size(sm);
+	margin: 0;
+}
+
+.gamelib-result__add {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: gamelib-space(sm);
+	padding-block-start: gamelib-space(xs);
+}
+
+// AC-017: the filter chips, the sort order, and the in-library title search.
+.gamelib-library__toolbar {
+	align-items: flex-end;
+	display: flex;
+	flex-wrap: wrap;
+	gap: gamelib-space(md) gamelib-space(lg);
+	padding-block-end: gamelib-space(lg);
+}
+
+.gamelib-library__control {
+	display: flex;
+	flex-direction: column;
+	gap: gamelib-space(xs);
+	margin: 0;
+}
+
+.gamelib-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: gamelib-space(xs);
+}
+
+// The selected chip and the selected status option are drawn from the same
+// state — aria-checked — so the styling can never disagree with what a screen
+// reader announces.
+// The tint derives from the inherited text colour so it inverts with the theme
+// instead of being a black wash that vanishes on a dark surface (DES-5), and
+// the inset ring is the actual state indicator: WCAG 1.4.11 wants 3:1 for one,
+// and a 12% tint is nowhere near that on any background. currentcolor is the
+// theme's own text colour, which already clears 4.5:1 against its background.
+.gamelib-chip[aria-checked="true"] {
+	background-color: color-mix(in oklab, currentcolor 12%, transparent);
+	box-shadow: inset 0 0 0 2px currentcolor;
+	font-weight: 600;
+}
+
+// AC-014e: the four-way status control on a card.
+.gamelib-card__controls {
+	display: flex;
+	flex-direction: column;
+	gap: gamelib-space(sm);
+	padding-block-start: gamelib-space(xs);
+}
+
+.gamelib-status {
+	display: flex;
+	flex-wrap: wrap;
+	gap: gamelib-space(xs);
+}
+
+.gamelib-status__option {
+	font-size: gamelib-font-size(xs);
+	padding-inline: gamelib-space(sm);
+}
+
+// The selected option takes its status hue *and* the weight the chip and the
+// follow toggle use (DES-15): four selected-state treatments, one vocabulary.
+@each $gamelib-status, $gamelib-hue in $gamelib-status-colors {
+
+	.gamelib-status__option--#{$gamelib-status}[aria-checked="true"] {
+		background-color: var(--wp--custom--gamelib--status--#{$gamelib-status}, #{$gamelib-hue});
+		color: var(--wp--custom--gamelib--status-foreground, #fff);
+		font-weight: 600;
+	}
+}
+
+.gamelib-card__remove {
+	align-self: flex-start;
+	font-size: gamelib-font-size(xs);
+}
+
+// AC-019a: the per-card bulk checkbox. Rendered on every owner card and shown
+// only in bulk-select mode — `display: none` rather than the `hidden`
+// attribute, because the cards are replaced wholesale by server fragments and a
+// modifier on the panel survives every swap without the bundle re-applying it.
+.gamelib-card__select {
+	align-items: center;
+	display: none;
+	font-size: gamelib-font-size(xs);
+	gap: gamelib-space(sm);
+	margin: 0;
+}
+
+.gamelib-library--selecting .gamelib-card__select {
+	display: flex;
+}
+
+// AC-NFR-004c: a checkbox's user-agent size is well under the 24 px floor.
+.gamelib-card__checkbox,
+.gamelib-bulk__checkbox {
+	block-size: gamelib-control(checkbox);
+	inline-size: gamelib-control(checkbox);
+	margin: 0;
+}
+
+// AC-019: the bulk bar. Its actions stay out of the document until the mode is
+// on, so a member who never selects anything never tabs through them.
+.gamelib-bulk {
+	display: flex;
+	flex-direction: column;
+	gap: gamelib-space(md);
+	padding-block-end: gamelib-space(lg);
+}
+
+.gamelib-bulk__toggle {
+	align-self: flex-start;
+}
+
+.gamelib-bulk__actions {
+	display: flex;
+	flex-direction: column;
+	gap: gamelib-space(sm);
+}
+
+.gamelib-bulk__row {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: gamelib-space(sm);
+	margin: 0;
+}
+
+// AC-018b: page controls. Hidden outright while there is only one page, so
+// nothing here has to style an inert state.
+.gamelib-pager {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: gamelib-space(md);
+	padding-block-start: gamelib-space(xl);
+}
+
+.gamelib-pager__status {
+	font-size: gamelib-font-size(sm);
+	margin: 0;
+}
+
+.gamelib-notice {
+	border-inline-start: 4px solid currentcolor;
+	margin-block: gamelib-space(lg);
+	padding: gamelib-space(sm) gamelib-space(md);
+}
+
+// The list states of AC-009/AC-010/AC-017/AC-020. A neutral state inherits the
+// theme's text colour on purpose: an empty result is not an error and must not
+// be dressed as one (AC-009).
+// It does *not* inherit the theme's body size: this element carries the empty
+// library, no-match and degraded-state copy, and with no step of its own it
+// rendered at 21.76px on Twenty Twenty-Five beside ~40 siblings pinned to
+// 0.75–1.125rem (DES-17).
+.gamelib-state {
+	font-size: gamelib-font-size(md);
+	margin-block: gamelib-space(lg);
+}
+
+/*
+ * DES-3. GameLib_Tokens' contract is that every feedback hue is a *background*
+ * paired with statusForeground; painting one as text over the theme's inherited
+ * background breaks that contract in one direction — #b91c1c is 6.47:1 on
+ * #ffffff but 2.94:1 on #111111, and this plugin commits to theme-agnosticism.
+ *
+ * Mixing the hue with currentcolor keeps the hue legible as a hue while pinning
+ * the *lightness* to the side of the inherited text colour: on a light theme the
+ * mix darkens toward the theme's near-black text, on a dark theme it lightens
+ * toward the theme's near-white text. Measured for the error hue: 70% #b91c1c +
+ * 30% #111111 on #111111 is 4.6:1, and 70% #b91c1c + 30% #f5f5f5 on #111111 is
+ * 5.9:1 — both past the 4.5:1 floor where the raw token was 2.94:1. On #ffffff
+ * the same mix is 8.1:1, up from 6.47:1.
+ *
+ * A browser without color-mix() drops the declaration and inherits the theme's
+ * own text colour — a degradation to "correct but uncoloured", never to
+ * "unreadable".
+ */
+.gamelib-state--error {
+	color: color-mix(in oklab, var(--wp--custom--gamelib--feedback--error, #b91c1c) 70%, currentcolor);
+}
+
+// A control with a request in flight: still focusable-looking, plainly inert.
+.gamelib-control[disabled] {
+	opacity: 0.6;
+}
+
+// Only the tones the plugin actually emits get a rule. `feedback.success`
+// remains a published token (D-REQ-40 names the feedback set) with no notice
+// variant of its own: successes on these surfaces are announced in the polite
+// live region rather than painted, so a rule for one would be dead CSS (DES-8).
+$gamelib-notice-tones: (error, warning);
+
+@each $gamelib-tone in $gamelib-notice-tones {
+	.gamelib-notice--#{$gamelib-tone} {
+		// The rule's own border keeps the raw hue — a 4px rule is a non-text UI
+		// component at 3:1, not body copy — while the text takes the mix.
+		border-inline-start-color: var(--wp--custom--gamelib--feedback--#{$gamelib-tone}, #{map.get($gamelib-feedback-colors, $gamelib-tone)});
+		color: color-mix(in oklab, var(--wp--custom--gamelib--feedback--#{$gamelib-tone}, #{map.get($gamelib-feedback-colors, $gamelib-tone)}) 70%, currentcolor);
+	}
+}
+
+/*
+ * AC-005: the /join/ registration form. Every class it emits used to have no
+ * rule at all, so the whole surface fell back to user-agent defaults — 20.3px
+ * inline labels beside 13.3px inputs 21px tall, the password hint sitting on the
+ * same line as the field it describes, and __error rendering as plain body copy
+ * that never reached the feedback-error token (DES-2).
+ *
+ * The field is a column stack because a label, a control, a hint and an error
+ * belong on their own lines; the input composes .gamelib-control's sizing rather
+ * than restating it, so the AC-NFR-004(c) 24px floor has exactly one definition.
+ */
+.gamelib-form {
+	display: flex;
+	flex-direction: column;
+	gap: gamelib-space(lg);
+	max-inline-size: gamelib-measure(form);
+}
+
+.gamelib-form__field {
+	display: flex;
+	flex-direction: column;
+	gap: gamelib-space(xs);
+	margin: 0;
+}
+
+.gamelib-form__label {
+	font-size: gamelib-font-size(sm);
+}
+
+.gamelib-form__hint {
+	font-size: gamelib-font-size(sm);
+}
+
+// The input now genuinely composes `.gamelib-control` — `templates/join.php`
+// renders both classes — so the AC-NFR-004(c) floor, the radius and the padding
+// have one definition and this rule carries only what is specific to a field
+// filling its column (DES-16). The four restated declarations that used to live
+// here were a second definition of the floor.
+.gamelib-form__input {
+	inline-size: 100%;
+}
+
+// Same derivation as the notice tones: the raw token is a background hue, and
+// as text over an inherited background it fails on a dark theme (DES-3).
+.gamelib-form__error {
+	color: color-mix(in oklab, var(--wp--custom--gamelib--feedback--error, #b91c1c) 70%, currentcolor);
+	font-size: gamelib-font-size(sm);
+}
+
+.gamelib-feed {
+	display: flex;
+	flex-direction: column;
+	gap: gamelib-space(lg);
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+// Each item is a programmatic focus target after a "Load more" append, so it
+// carries tabindex="-1" — the focus ring is the shared :focus-visible rule and
+// nothing here suppresses it (AC-NFR-004b).
+// The feed starts at 20 items and grows by 20 per activation with no ceiling,
+// so the off-screen ones are skipped until they approach the viewport (PF-10).
+// The padding is the focus ring's reach, for the reason spelled out on
+// `.gamelib-card`: paint containment clips it otherwise (DES-14).
+.gamelib-feed__item {
+	contain-intrinsic-size: auto 4rem;
+	content-visibility: auto;
+	display: flex;
+	flex-direction: column;
+	gap: gamelib-space(xs);
+	padding: gamelib-space(xs);
+}
+
+.gamelib-feed__actor,
+.gamelib-feed__sentence {
+	margin: 0;
+}
+
+.gamelib-feed__time {
+	font-size: gamelib-font-size(sm);
+}
+
+// AC-025b: the keyset control. Hidden outright at the end of the feed, so
+// there is no inert state to style.
+.gamelib-feed__pager {
+	margin-block: gamelib-space(xl) 0;
+}
+
+// A member profile (AC-031): the header carries the name, both counts, the
+// follow toggle, and — on a public profile only — the copy-link.
+.gamelib-profile__header {
+	display: flex;
+	flex-direction: column;
+	gap: gamelib-space(sm);
+}
+
+.gamelib-profile__counts {
+	display: flex;
+	flex-wrap: wrap;
+	gap: gamelib-space(xs) gamelib-space(lg);
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.gamelib-profile__count {
+	font-size: gamelib-font-size(sm);
+}
+
+.gamelib-profile__actions,
+.gamelib-profile__own {
+	margin: 0;
+}
+
+// AC-022c: the pressed state is drawn from aria-pressed, so what is painted
+// and what is announced cannot disagree.
+.gamelib-profile__follow {
+	align-self: flex-start;
+}
+
+// Same treatment as the selected chip, and for the same reason: the pressed
+// state needs a 3:1 indicator, not a tint that disappears on a dark theme
+// (DES-5, WCAG 1.4.11).
+.gamelib-profile__follow[aria-pressed="true"] {
+	background-color: color-mix(in oklab, currentcolor 12%, transparent);
+	box-shadow: inset 0 0 0 2px currentcolor;
+	font-weight: 600;
+}
+
+// Import review (AC-042). The whole panel is replaced by a server-rendered
+// fragment on every poll and every decision, so nothing below may depend on
+// state held in the DOM — only on the classes the part emits.
+.gamelib-import__status {
+	font-weight: 600;
+	margin-block: 0 gamelib-space(sm);
+}
+
+.gamelib-import__progress progress {
+	inline-size: 100%;
+}
+
+.gamelib-import__unmatched {
+	margin-block: gamelib-space(sm);
+}
+
+.gamelib-import__finish {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: gamelib-space(sm);
+	margin-block: gamelib-space(lg);
+}
+
+.gamelib-import__finish-hint {
+	font-size: gamelib-font-size(sm);
+}
+
+.gamelib-import__summary {
+	display: flex;
+	flex-wrap: wrap;
+	gap: gamelib-space(xs) gamelib-space(lg);
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.gamelib-import__bucket {
+	padding-block-start: gamelib-space(lg);
+}
+
+.gamelib-import__bucket-title {
+	font-size: gamelib-font-size(lg);
+	margin-block: 0 gamelib-space(sm);
+}
+
+.gamelib-import__rows {
+	display: flex;
+	flex-direction: column;
+	gap: gamelib-space(md);
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+// Up to 100 rows per bucket across six buckets, almost all of them below the
+// fold on first paint (PF-10). The rule derives from the inherited text colour
+// so it survives a dark theme (DES-5).
+// The row keeps its inline-start padding (the rule beside the border) and gains
+// the other three sides for the focus ring paint containment would otherwise
+// clip (DES-14).
+.gamelib-import__row {
+	border-inline-start: 2px solid color-mix(in oklab, currentcolor 12%, transparent);
+	contain-intrinsic-size: auto 5rem;
+	content-visibility: auto;
+	display: flex;
+	flex-direction: column;
+	gap: gamelib-space(xs);
+	padding: gamelib-space(xs);
+	padding-inline-start: gamelib-space(md);
+}
+
+.gamelib-import__row-name {
+	font-weight: 600;
+}
+
+.gamelib-import__row-note,
+.gamelib-import__row-appid,
+.gamelib-import__candidate-year {
+	font-size: gamelib-font-size(sm);
+}
+
+.gamelib-import__search {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: gamelib-space(sm);
+}
+
+.gamelib-import__search-field {
+	flex: 1 1 gamelib-measure(field);
+	min-inline-size: 0;
+}
+
+.gamelib-import__candidate-list {
+	display: flex;
+	flex-direction: column;
+	gap: gamelib-space(xs);
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.gamelib-import__candidate {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: gamelib-space(sm);
+}
+
+.gamelib-import__skip {
+	align-self: flex-start;
+}
+
+// The account panel (AC-001, AC-027, AC-030, AC-037, AC-046, AC-050): a stack
+// of blocks, each one setting for the member's own account.
+.gamelib-account {
+	display: flex;
+	flex-direction: column;
+	gap: gamelib-space(xl);
+}
+
+.gamelib-account__block {
+	display: flex;
+	flex-direction: column;
+	gap: gamelib-space(sm);
+}
+
+.gamelib-account__title {
+	font-size: gamelib-font-size(lg);
+	margin: 0;
+}
+
+.gamelib-account__hint,
+.gamelib-account__allowance,
+.gamelib-account__label {
+	font-size: gamelib-font-size(sm);
+	margin: 0;
+}
+
+.gamelib-account__row {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: gamelib-space(sm);
+	margin: 0;
+}
+
+.gamelib-account__action {
+	align-self: flex-start;
+}
+
+// DES-17: "Preview as visitor" was the largest text in the account panel —
+// larger than the headings above it — because it was the one link with no step
+// of its own.
+.gamelib-account__preview {
+	font-size: gamelib-font-size(sm);
+}
+
+.gamelib-account__value {
+	font-family: monospace;
+}
+
+// AC-027b: the two states, "Members-only" and "Public". Selected state is drawn
+// from aria-checked, so the styling cannot disagree with what is announced.
+.gamelib-visibility {
+	display: flex;
+	flex-wrap: wrap;
+	gap: gamelib-space(xs);
+}
+
+@each $gamelib-state, $gamelib-hue in $gamelib-visibility-colors {
+
+	.gamelib-visibility__option--#{$gamelib-state}[aria-checked="true"] {
+		background-color: var(--wp--custom--gamelib--visibility--#{$gamelib-state}, #{$gamelib-hue});
+		color: var(--wp--custom--gamelib--status-foreground, #fff);
+		font-weight: 600;
+	}
+}
+
+// AC-050c: the copy control and the region its confirmation lands in.
+.gamelib-share {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: gamelib-space(sm);
+	margin: 0;
+}
+
+.gamelib-share__feedback {
+	font-size: gamelib-font-size(sm);
+}
+
+// AC-001: the member's own invites, newest first.
+.gamelib-invites {
+	display: flex;
+	flex-direction: column;
+	gap: gamelib-space(sm);
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.gamelib-invite {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: gamelib-space(sm);
+}
+
+.gamelib-invite__url {
+	font-family: monospace;
+	font-size: gamelib-font-size(sm);
+	overflow-wrap: anywhere;
+}
+
+.gamelib-invite__status {
+	font-size: gamelib-font-size(sm);
+}
+
+// AC-038: the file import launcher.
+.gamelib-import-file {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: gamelib-space(sm);
+}
+
+// A file input is sized by its own shadow button, so `flex: 1 1 14rem` grew it
+// to 526px and stranded "Start import" ~490px from the picker (DES-13). It
+// composes `.gamelib-control` in the template for the 24px floor — the rule
+// above is safe on a replaced element since the chrome moved out of it (DES-16)
+// — and takes its intrinsic width here.
+.gamelib-import-file__field {
+	flex: 0 1 auto;
+	min-inline-size: 0;
+}
+
+// Steam launcher and its pre-start disclosure (AC-046a). No Steam or Valve
+// mark is rendered anywhere, so there is nothing here but layout.
+.gamelib-steam__title {
+	font-size: gamelib-font-size(lg);
+	margin-block: 0 gamelib-space(sm);
+}
+
+.gamelib-steam__disclosure {
+	font-size: gamelib-font-size(sm);
+	margin-block-end: gamelib-space(md);
+}
+
+.gamelib-steam__disclosure p {
+	margin-block: 0 gamelib-space(xs);
+}
+
+.gamelib-steam__label {
+	display: block;
+	font-size: gamelib-font-size(sm);
+}
+
+.gamelib-steam__start {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: gamelib-space(sm);
+}
+
+.gamelib-steam__field {
+	flex: 1 1 gamelib-measure(launcher);
+	min-inline-size: 0;
+}
+
+/*
+ * The game page (AC-032) — the one plugin surface the *theme* renders, injected
+ * into `the_content` by `GameLib_Game_CPT::render_game()`.
+ *
+ * Every class that method emits used to have no rule at all (DES-20): the `dt`
+ * and its `dd` both painted at the theme's body weight and size with the user
+ * agent's 40px `dd` indent, so on the plugin's only public page a field label
+ * was indistinguishable from its value. The markup is correct and is not
+ * touched; what follows is the missing half.
+ */
+.gamelib-game__body {
+	display: flex;
+	flex-direction: column;
+	gap: gamelib-space(md);
+}
+
+/*
+ * The hero composes `.gamelib-card__media`, which was authored for an ~180px
+ * grid cell: `aspect-ratio` with no ceiling, so a 264×352 asset painted at
+ * 960×1280 and pushed the summary two viewports down (DES-12). The ceiling is
+ * the rendition's own intrinsic width, so the cover is never upscaled.
+ */
+.gamelib-game__cover {
+	max-inline-size: gamelib-measure(cover);
+}
+
+.gamelib-game__meta {
+	display: grid;
+	gap: gamelib-space(sm);
+	margin-block: gamelib-space(lg);
+}
+
+.gamelib-game__meta-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: gamelib-space(sm);
+}
+
+.gamelib-game__meta-label {
+	font-size: gamelib-font-size(sm);
+	font-weight: 600;
+}
+
+/*
+ * The user agent indents a `dd` by 40px; here the label and the value are a
+ * single wrapping row.
+ *
+ * The step is the plugin's own, not the theme's (DES-17, DES-3): the label took
+ * a step in the cycle-2 pass and the value was left inheriting the theme body
+ * size, which on Twenty Twenty-Five is 21.76px at weight 300 — so every meta row
+ * on the plugin's only public page rendered a small bold caption beside a large
+ * light value. `md` rather than the label's `sm`: the value is the answer, and
+ * the pair reads label-then-answer at one step apart. Only
+ * `.gamelib-game__summary` is exempt from the plugin's steps here, by name,
+ * because it is prose; a meta value is chrome.
+ */
+.gamelib-game__meta-value {
+	font-size: gamelib-font-size(md);
+	margin: 0;
+}
+
+// The summary is prose from IGDB and deliberately keeps the theme's own body
+// size — it is the one place on this surface where matching the surrounding
+// article is right, and the plugin's steps are for its chrome (DES-17).
+.gamelib-game__summary {
+	margin-block: 0;
+}
+
+.gamelib-game__attribution {
+	font-size: gamelib-font-size(sm);
+}
+
+// Loading placeholder for pending fragments. Tinted from the inherited text
+// colour so it is visible on a dark theme too (DES-5).
+.gamelib-shimmer {
+	animation: gamelib-shimmer 1.2s linear infinite;
+	background-color: color-mix(in oklab, currentcolor 8%, transparent);
+	border-radius: var(--wp--custom--gamelib--radius, 4px);
+	min-block-size: 1rem;
+}
+
+/*
+ * The first of the two conditions that stop it — a placeholder inside a box the
+ * member cannot see (PF-3). The other is `prefers-reduced-motion`, below.
+ *
+ * `display: none` cancels the animations on an element and its descendants;
+ * `visibility: hidden` does not, and the in-flight search paragraph keeps its
+ * box in both states so the swap holds still (PF-1). So from first paint, on an
+ * idle page nobody has searched on, an invisible 96x12px span animated forever —
+ * verified with `getAnimations()`: one running animation whose `currentTime`
+ * advanced 0 -> 316.65ms over a 400ms wait, against zero for a `display: none`
+ * control. Not a CWV threshold risk (opacity is compositor-driven), but it keeps
+ * the renderer off idle and the layer promoted for the whole session, on the
+ * plugin's highest-traffic authenticated route.
+ */
+.gamelib-search__loading[hidden] .gamelib-shimmer {
+	animation: none;
+}
+
+@keyframes gamelib-shimmer {
+
+	0% {
+		opacity: 1;
+	}
+
+	50% {
+		opacity: 0.45;
+	}
+
+	100% {
+		opacity: 1;
+	}
+}
+
+/*
+ * The four selected-state treatments in forced-colors mode (DES-15).
+ *
+ * Forced colors replaces every author `background-color` and `color` with a
+ * system pair and forces `box-shadow: none`, so both indicators this stylesheet
+ * uses are erased: measured under Playwright with `forcedColors: 'active'`, a
+ * checked status option computed byte-identical to its unchecked siblings and
+ * the control showed no selection at all. An `outline` is the one indicator
+ * forced colors preserves, and `Highlight` is the system colour that means
+ * "selected".
+ *
+ * The offset is negative so the ring is drawn inside the control's own box and
+ * cannot be confused with the focus ring, which sits 2px outside it.
+ */
+@media (forced-colors: active) {
+
+	.gamelib-chip[aria-checked="true"],
+	.gamelib-status__option[aria-checked="true"],
+	.gamelib-visibility__option[aria-checked="true"],
+	.gamelib-profile__follow[aria-pressed="true"] {
+		outline: 2px solid Highlight;
+		outline-offset: -2px;
+	}
+}
+
+// AC-NFR-004d: motion is opt-out, not decoration a reader has to endure. The
+// transition it turns off is declared on the button/anchor chrome rule, which is
+// 0-1-0 since DES-3 wrapped its element filter in `:where()` — so one class is
+// enough here and this wins on source order, with nothing to keep in sync.
+@media (prefers-reduced-motion: reduce) {
+
+	.gamelib-shimmer {
+		animation: none;
+	}
+
+	.gamelib-control {
+		transition: none;
+	}
+}
