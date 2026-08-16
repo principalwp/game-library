@@ -1,0 +1,168 @@
+/* ============================================================
+   Game Library — tokens.css
+   Transcribes design-guide §12: every --gl-* token declared on
+   :root as var(--wp--preset--*|--wp--custom--*, <literal>) so a
+   theme (PrincipalWP) re-themes automatically while a preset-less
+   theme (Twenty Twenty-Five) renders the designed literals.
+
+   Fonts are self-hosted (OQ-3): the three families ship as woff2
+   under ../fonts/ with font-display: swap, while the --gl-font-*
+   chains still defer to --wp--preset--font-family--* so a theme
+   that registers the same family wins.
+   ============================================================ */
+
+/* ---- Self-hosted faces (SIL Open Font License, see ../fonts/LICENSE) ---- */
+@font-face {
+	font-family: 'Instrument Serif';
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url('../fonts/instrument-serif-400.woff2') format('woff2');
+}
+@font-face {
+	font-family: 'Instrument Serif';
+	font-style: italic;
+	font-weight: 400;
+	font-display: swap;
+	src: url('../fonts/instrument-serif-400-italic.woff2') format('woff2');
+}
+@font-face {
+	font-family: 'IBM Plex Sans';
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url('../fonts/ibm-plex-sans-400.woff2') format('woff2');
+}
+@font-face {
+	font-family: 'IBM Plex Sans';
+	font-style: normal;
+	font-weight: 500;
+	font-display: swap;
+	src: url('../fonts/ibm-plex-sans-500.woff2') format('woff2');
+}
+@font-face {
+	font-family: 'IBM Plex Sans';
+	font-style: normal;
+	font-weight: 600;
+	font-display: swap;
+	src: url('../fonts/ibm-plex-sans-600.woff2') format('woff2');
+}
+@font-face {
+	font-family: 'IBM Plex Mono';
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url('../fonts/ibm-plex-mono-400.woff2') format('woff2');
+}
+@font-face {
+	font-family: 'IBM Plex Mono';
+	font-style: normal;
+	font-weight: 500;
+	font-display: swap;
+	src: url('../fonts/ibm-plex-mono-500.woff2') format('woff2');
+}
+
+:root {
+	color-scheme: light;
+
+	/* surfaces & text */
+	--gl-color-surface: var(--wp--preset--color--white, #FFFFFF);
+	--gl-color-surface-muted: var(--wp--preset--color--off-white, #F4F6FA);
+	--gl-color-surface-warm: var(--wp--preset--color--warm-wash, #F3EBF0);
+	--gl-color-border: var(--wp--custom--navy-opacity--15, #DCDFE3);
+	--gl-color-border-strong: var(--wp--custom--navy-opacity--30, #BBBFC9);
+	--gl-color-text: var(--wp--preset--color--navy-90, #313F5C);
+	--gl-color-text-muted: color-mix(in oklab, var(--wp--preset--color--navy-60, #767F92) 70%, var(--wp--preset--color--navy, #1B2A4A) 30%);
+	--gl-color-heading: var(--wp--preset--color--navy, #1B2A4A);
+
+	/* action / accent — cranberry is the only accent */
+	--gl-color-action: var(--wp--preset--color--cranberry, #8C3344);
+	--gl-color-action-hover: var(--wp--custom--cranberry--hover, #6D2735);
+	--gl-color-action-active: var(--wp--custom--cranberry--active, #5B212C);
+	--gl-color-action-on: var(--wp--preset--color--white, #FFFFFF);
+
+	/* status — Option A: dot + mono label */
+	--gl-color-status-playing: var(--wp--preset--color--cranberry, #8C3344);
+	--gl-color-status-finished: var(--wp--custom--semantic--success--border, #639922);
+	--gl-color-status-backlog: var(--wp--preset--color--navy, #1B2A4A);
+	--gl-color-status-wishlist: #D6A400; /* literal only — intentionally below the 3:1 non-text floor; the dot is never the sole status carrier */
+
+	/* feedback / notices — semantic ramps, light-bg + dark-text */
+	--gl-color-info-bg: var(--wp--custom--semantic--info--bg, #E6F1FB);
+	--gl-color-info-text: var(--wp--custom--semantic--info--text, #0C447C);
+	--gl-color-info-border: var(--wp--custom--semantic--info--border, #378ADD);
+	--gl-color-success-bg: var(--wp--custom--semantic--success--bg, #EAF3DE);
+	--gl-color-success-text: var(--wp--custom--semantic--success--text, #27500A);
+	--gl-color-success-border: var(--wp--custom--semantic--success--border, #639922);
+	--gl-color-warning-bg: var(--wp--custom--semantic--warning--bg, #FAEEDA);
+	--gl-color-warning-text: var(--wp--custom--semantic--warning--text, #633806);
+	--gl-color-warning-border: var(--wp--custom--semantic--warning--border, #EF9F27);
+	--gl-color-error-bg: var(--wp--custom--semantic--error--bg, #FCEBEB);
+	--gl-color-error-text: var(--wp--custom--semantic--error--text, #791F1F);
+	--gl-color-error-border: var(--wp--custom--semantic--error--border, #E24B4A);
+
+	/* form-level validation — brand cranberry, distinct from Notice ramps */
+	--gl-color-field-error: var(--wp--preset--color--cranberry, #8C3344);
+	--gl-color-field-invalid-bg: var(--wp--preset--color--warm-wash, #F3EBF0);
+
+	/* dark / navy-surface text (header bands, hero) */
+	--gl-color-dark-heading: var(--wp--preset--color--white, #FFFFFF);
+	--gl-color-dark-subheading: var(--wp--custom--dark-surface--subheading, rgba(255, 255, 255, 0.85));
+	--gl-color-dark-body: var(--wp--custom--dark-surface--body, #A8C0CF);
+	--gl-color-dark-label: var(--wp--custom--dark-surface--label, rgba(255, 255, 255, 0.5));
+	--gl-color-dark-hairline: var(--wp--custom--dark-surface--hairline, rgba(255, 255, 255, 0.08));
+	--gl-color-dark-hairline-strong: var(--wp--custom--dark-surface--hairline-strong, rgba(255, 255, 255, 0.2));
+	--gl-color-dark-divider: var(--wp--custom--dark-surface--divider, rgba(255, 255, 255, 0.15));
+	--gl-color-dark-focus: var(--wp--preset--color--white, #FFFFFF);
+	--gl-color-dark-accent: #BA858F; /* cranberry lightened for navy grounds — no direct WP swatch (4.62:1 on navy) */
+
+	/* type — family chains defer to the theme, then to the self-hosted faces */
+	--gl-font-family-display: var(--wp--preset--font-family--display, 'Instrument Serif', Georgia, 'Times New Roman', serif);
+	--gl-font-family-body: var(--wp--preset--font-family--body, 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+	--gl-font-family-mono: var(--wp--preset--font-family--mono, 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+	--gl-font-display: var(--gl-font-family-display);
+	--gl-font-body: var(--gl-font-family-body);
+	--gl-font-mono: var(--gl-font-family-mono);
+	--gl-tracking-eyebrow: 0.06em;
+
+	--gl-font-size-meta: var(--wp--preset--font-size--xs, 0.8125rem);
+	--gl-font-size-body: var(--wp--custom--font-size--body, 1rem);
+	--gl-font-size-title: var(--wp--preset--font-size--md, 1.25rem);
+
+	/* radius */
+	--gl-radius-sm: var(--wp--custom--radius--sm, 3px);
+	--gl-radius-md: var(--wp--custom--radius--md, 6px);
+	--gl-radius-lg: var(--wp--custom--radius--lg, 9px);
+	--gl-radius-pill: 999px;
+
+	/* spacing — no ready-made WP step; literals tuned to the theme's 1.5x scale */
+	--gl-space-xs: 0.375rem;
+	--gl-space-sm: 0.75rem;
+	--gl-space-md: 1.5rem;
+	--gl-space-lg: 2.25rem;
+
+	/* shadow — whisper only */
+	--gl-shadow-card: 0 1px 3px rgba(27, 42, 74, 0.07), 0 1px 2px rgba(27, 42, 74, 0.05);
+	--gl-shadow-hover: 0 6px 16px rgba(27, 42, 74, 0.22);
+	--gl-shadow-thumb: 0 1px 2px rgba(27, 42, 74, 0.3);
+	--gl-color-backdrop: rgba(27, 42, 74, 0.45);
+
+	/* accent rule */
+	--gl-rule-w: 64px;
+	--gl-rule-h: 2px;
+
+	/* grid density */
+	--gl-grid-card-min: 11.5rem;
+	--gl-grid-gap: 1.25rem;
+
+	/* layout mechanics */
+	--gl-container-content: var(--wp--style--global--content-size, 1040px);
+	--gl-container-wide: var(--wp--style--global--wide-size, 1240px);
+	--gl-focus-ring-width: 2px;
+	--gl-focus-ring-offset: 2px;
+	--gl-cover-aspect-ratio: 264 / 374;
+	--gl-avatar-sm: 24px;
+	--gl-avatar-md: 40px;
+	--gl-avatar-lg: 64px;
+	--gl-thumb-cover-width: 64px;
+}
