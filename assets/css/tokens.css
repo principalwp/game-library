@@ -1,0 +1,400 @@
+/**
+ * Game Library design tokens (DD-003/ADR-003).
+ *
+ * PF-1 (cycle-5): the design rationale below is inline and load-bearing by
+ * deliberate human ruling, not accidental bloat — this file, not a
+ * separate doc, is its authoritative home. See DD-007/the Boundaries
+ * section before proposing to relocate, trim, or duplicate it elsewhere.
+ *
+ * Every `--gl-*` custom property below terminates in a literal value. Where
+ * a WordPress core preset or global-styles variable is a genuine RENDERED
+ * value — the named font-size/font-family steps, the content/wide layout
+ * widths a theme.json `layout` setting exposes, and (DES-50, the PrincipalWP
+ * restyle) the theme's own colour palette and semantic-ramp customs — that
+ * variable forms the first link of the fallback chain, e.g.
+ * `--gl-color-action: var(--wp--preset--color--cranberry, #8C3344);`, so a
+ * site running the PrincipalWP theme is honoured automatically and the
+ * literal after the comma is the value used when no theme (or no matching
+ * preset) is active. Every chain carries that literal fallback — never a bare
+ * `var()`.
+ *
+ * DES-50 (PrincipalWP restyle) deliberately REOPENS the palette-chain hazard
+ * DES-25/DES-26/DES-27 (cycle-3) closed. Those three cut `--gl-color-action`/
+ * status/surface/text loose from `--wp--preset--color--*` after a *generic*
+ * theme's unrelated swatch (Twenty Twenty-Three's lime) silently became the
+ * button colour at 1.25:1. This restyle re-chains them, now scoped to
+ * PrincipalWP-specific slugs (`cranberry`, `navy`, `navy-90`, `navy-60`,
+ * `off-white`, `warm-wash`) and the theme's own `--wp--custom--semantic--*`
+ * ramps — appropriate BECAUSE the restyle explicitly couples this plugin to
+ * one named theme, and every chain still carries a contrast-verified literal
+ * fallback. The caveat that survives with it: any future edit to
+ * PrincipalWP's own theme.json that changes what those slugs resolve to must
+ * be re-checked against the contrast floors documented per token below —
+ * nothing else catches that drift automatically. Tokens whose contrast can
+ * only be guaranteed by owning the value outright (`--gl-color-border-strong`,
+ * the dark-surface accent/focus pair, `--gl-color-status-wishlist`) stay
+ * self-contained literals, exactly as DES-25 taught.
+ *
+ * `game-library.css` (enqueued after this file, with this file as its
+ * dependency — see `includes/class-assets.php`) consumes every value here
+ * and declares no colour, radius, spacing, type size, avatar size, container
+ * width, focus-ring value, media value, shadow, or font stack of its own
+ * (AC-049). `fonts.css` (enqueued before this file) declares the seven
+ * self-hosted `@font-face` rules the font-family tokens below name.
+ *
+ * @package Game_Library
+ */
+
+:root {
+
+	/* Status colours — dot + uppercase mono label (design §2A). The badge no
+	 * longer paints a fill, so the four paired "-on" foreground tokens are
+	 * RETIRED (DES-50): the only painted use of a status colour is now a small
+	 * `::before` dot, and the status text (AC-015) is always present as the
+	 * real, non-colour carrier of meaning — a status colour is a secondary
+	 * cue, never load-bearing (DES-10). Each chains to the PrincipalWP slug
+	 * that renders it, except wishlist. Verified on white: playing 7.86:1,
+	 * finished 3.44:1, backlog 14.22:1 (design §2A) — all clear the 3:1
+	 * non-text floor for the dot. */
+	--gl-color-status-playing: var(--wp--preset--color--cranberry, #8C3344);
+	--gl-color-status-finished: var(--wp--custom--semantic--success--border, #639922);
+	--gl-color-status-backlog: var(--wp--preset--color--navy, #1B2A4A);
+
+	/* Wishlist gold measures 2.29:1 on white — below SC 1.4.11's 3:1 non-text
+	 * floor, a human-approved exception (design §2A) defensible ONLY because
+	 * the dot is never the sole status cue: the uppercase mono label beside it
+	 * always carries the meaning. Literal only — deliberately NOT chained, so
+	 * no theme edit can move it further from an already-below-floor value. */
+	--gl-color-status-wishlist: #D6A400;
+
+	/* Action colours — primary interactive controls (buttons, links styled as
+	 * buttons, the base focus ring). Re-chained to PrincipalWP's cranberry
+	 * (DES-50, reversing DES-25's severance — see file header). Hover/active
+	 * are the theme's own darker cranberry steps, so a state change reads as a
+	 * darkening, not a hue shift. */
+	--gl-color-action: var(--wp--preset--color--cranberry, #8C3344);
+	--gl-color-action-hover: var(--wp--custom--cranberry--hover, #6D2735);
+	--gl-color-action-active: var(--wp--custom--cranberry--active, #5B212C);
+	--gl-color-action-on: var(--wp--preset--color--white, #FFF);
+
+	/* Surface & text colours. `-muted` and `-warm` are real theme swatches now
+	 * (DES-50), not the color-mix() derivations DES-27 used — a flat,
+	 * contrast-verifiable literal replaces a compounding derivation. `-heading`
+	 * (navy) is new: card/page titles and member names, distinct from the
+	 * `-text` body colour (navy-90). */
+	--gl-color-surface: var(--wp--preset--color--white, #FFF);
+	--gl-color-surface-muted: var(--wp--preset--color--off-white, #F4F6FA);
+	--gl-color-surface-warm: var(--wp--preset--color--warm-wash, #F3EBF0);
+	--gl-color-heading: var(--wp--preset--color--navy, #1B2A4A);
+	--gl-color-text: var(--wp--preset--color--navy-90, #313F5C);
+
+	/* `--gl-color-text-muted` KEEPS a color-mix() derivation (DES-50): raw
+	 * navy-60 (#767F92) measures only 4.02:1 on white — under the 4.5:1 AA
+	 * floor for the small mono meta/caption text this token drives everywhere.
+	 * Mixed 70/30 toward navy it measures 5.81:1 on white and 5.37:1 on
+	 * off-white (design §12 contrast note), both clearing AA. This is the one
+	 * token the design explicitly re-verified. */
+	--gl-color-text-muted: color-mix( in oklab, var(--wp--preset--color--navy-60, #767F92) 70%, var(--wp--preset--color--navy, #1B2A4A) 30% );
+
+	/* Borders. `--gl-color-border` is the faint decorative hairline (cards,
+	 * dividers) — the theme's 15%-navy-over-white swatch. */
+	--gl-color-border: var(--wp--custom--navy-opacity--15, #DCDFE3);
+
+	/* DES-51 (PrincipalWP restyle): `--gl-color-border-strong` is the RENAMED
+	 * `--gl-color-border-interactive` — the boundary every form control,
+	 * select, secondary button, pagination link, and the empty-state dashed
+	 * border uses on its own interactive edge (SC 1.4.11's 3:1 non-text floor).
+	 * The design proposed `#BBBFC9` (navy-opacity-30) here, but that measures
+	 * only ~1.84:1 on white — it FAILS the exact contract this token's
+	 * predecessor was created to satisfy (the design's own §9/§12 contrast
+	 * pass never re-checked it). Darkened, per human ruling §F.1, to the
+	 * lightest self-contained value that clears the floor: #868E9F measures
+	 * 3.29:1 on white and ~3.04:1 on the off-white surface the empty-state
+	 * border can sit on. Kept a literal — not chained to navy-opacity-30 —
+	 * because that swatch is the failing value, so honouring it under the real
+	 * theme would reintroduce the very regression this fixes (DES-25's lesson).
+	 * Visual tradeoff for the design reviewer: control edges read as a slightly
+	 * darker, more present grey-blue than the mockup's very faint #BBBFC9. */
+	--gl-color-border-strong: #868E9F;
+
+	/* Feedback / Notice ramps — light background, dark text, mid-tone border
+	 * per semantic hue (design §1), a real triplet per colour instead of the
+	 * single saturated fill + white `-on` text DES-26/27 used. `.gl-notice--*`
+	 * paints from these; `.gl-notice--info` gains a genuine info hue for the
+	 * first time. The old `--gl-color-error`/`-on`/`-text` and
+	 * `--gl-color-success`/`-on`/`-text` are RETIRED (DES-50). Every bg/text
+	 * pair measures 8.2–12.4:1 (design §2A). */
+	--gl-color-error-bg: var(--wp--custom--semantic--error--bg, #FCEBEB);
+	--gl-color-error-text: var(--wp--custom--semantic--error--text, #791F1F);
+	--gl-color-error-border: var(--wp--custom--semantic--error--border, #E24B4A);
+	--gl-color-success-bg: var(--wp--custom--semantic--success--bg, #EAF3DE);
+	--gl-color-success-text: var(--wp--custom--semantic--success--text, #27500A);
+	--gl-color-success-border: var(--wp--custom--semantic--success--border, #639922);
+	--gl-color-info-bg: var(--wp--custom--semantic--info--bg, #E6F1FB);
+	--gl-color-info-text: var(--wp--custom--semantic--info--text, #0C447C);
+	--gl-color-info-border: var(--wp--custom--semantic--info--border, #378ADD);
+
+	/* Form-level validation stays brand cranberry (design §2), deliberately
+	 * distinct from the error Notice ramp above — a field error is a brand
+	 * moment, not a system alert. #8C3344 on white is 7.86:1. */
+	--gl-color-field-error: var(--wp--preset--color--cranberry, #8C3344);
+
+	/* Dark-surface text — the navy `.gl-header-band` on /my-library/ and the
+	 * /games/{slug}/ hero (DES-50). `-subheading` and `-hairline-strong` reuse
+	 * PrincipalWP's own `--wp--custom--dark-surface--*` tokens; `-accent` and
+	 * `-focus` are literal-only and deliberately NOT chained to cranberry:
+	 * raw cranberry measures 1.81:1 on navy, under the 3:1 floor, so `-accent`
+	 * is a lightened #BA858F (4.62:1 on navy) for the eyebrow, and `-focus` is
+	 * white (~14:1) for the header-band focus ring (DES-101). `-heading` is
+	 * white; `-body` is the design's own translucent-white body literal.
+	 * DES-104 dropped the unconsumed `-label`, plain `-hairline`, and
+	 * `-divider` tokens (0x consumed). */
+	--gl-color-dark-heading: var(--wp--preset--color--white, #FFF);
+	--gl-color-dark-subheading: var(--wp--custom--dark-surface--subheading, rgb(255 255 255 / 0.85));
+	--gl-color-dark-body: #A8C0CF;
+	--gl-color-dark-hairline-strong: var(--wp--custom--dark-surface--hairline-strong, rgb(255 255 255 / 0.2));
+	--gl-color-dark-focus: #FFF;
+	--gl-color-dark-accent: #BA858F;
+
+	/* Site chrome (header/footer redesign task): the plugin's own sitewide
+	 * nav bar (`.gl-site-header`) and its footer bookend (`.gl-site-footer`)
+	 * paint the same navy surface as `.gl-header-band` above (both read
+	 * `--gl-color-heading`), but are a genuinely different component — a
+	 * persistent brand/nav strip on every route, not a per-page hero — so
+	 * they get their own two dark-surface tokens rather than overloading the
+	 * hero-scoped ones above. `-dark-link` is the inactive-state colour for a
+	 * nav/footer link on that navy ground: deliberately dimmer than
+	 * `-dark-subheading` so the active item (full `-dark-heading` white, plus
+	 * the `-dark-accent` underline) reads clearly against it — mixed by hand
+	 * against navy, this measures ~5.3:1, clearing the 4.5:1 AA text floor
+	 * with room to spare. `-dark-hairline-soft` is a much fainter boundary
+	 * than `-dark-hairline-strong` above — the barely-there seam along the
+	 * header's own bottom edge and the footer's matching top edge, never an
+	 * interactive control boundary (that stays `-dark-hairline-strong`,
+	 * reused as-is for the mobile-menu toggle's own border, see
+	 * game-library.css). Not a reintroduction of DES-104's retired
+	 * `-dark-divider`/`-dark-hairline` — those were dropped for being
+	 * genuinely unconsumed; these are new names with a real, consumed use.
+	 * Both chain to the theme's own dark-surface customs first, literal
+	 * fallback last, matching every other token in this group. */
+	--gl-color-dark-link: var(--wp--custom--dark-surface--link, rgb(255 255 255 / 0.55));
+	--gl-color-dark-hairline-soft: var(--wp--custom--dark-surface--divider, rgb(255 255 255 / 0.08));
+
+	/* Radius — px, not rem (references/tokens.md keeps borders/radii in px
+	 * regardless of root font-size). `--gl-radius-lg` is new (DES-50):
+	 * game-single cover, quick-look panel. `--gl-radius-pill`'s scope narrows
+	 * to true circles only (avatars, spinner, dot, toggle) — badges and
+	 * filters move to sharp corners (design §2). */
+	--gl-radius-sm: var(--wp--custom--radius--sm, 3px);
+	--gl-radius-md: var(--wp--custom--radius--md, 6px);
+	--gl-radius-lg: var(--wp--custom--radius--lg, 9px);
+	--gl-radius-pill: 999px;
+
+	/* Spacing — rem, so the scale grows with a user's preferred root font-size
+	 * (WCAG 1.4.4). DES-50 retunes all four to the theme's airier 1.5× scale
+	 * (`md` = the theme's own "medium step"). Still four steps, not five
+	 * (DES-38) — AC-049(f) is satisfied by these four. */
+	--gl-space-xs: 0.375rem;
+	--gl-space-sm: 0.75rem;
+	--gl-space-md: 1.5rem;
+	--gl-space-lg: 2.25rem;
+
+	/* Font families (DES-50, self-hosted via fonts.css). The plugin declared
+	 * no body font before — it silently inherited the theme's; this makes it
+	 * explicit. `--gl-font-family-display` (Instrument Serif) drives editorial
+	 * titles; `--gl-font-family-mono` (IBM Plex Mono) drives every eyebrow,
+	 * label, meta, badge, and code line. Each chains to the theme's own
+	 * font-family preset with the self-hosted stack as the literal fallback. */
+	--gl-font-family-display: var(--wp--preset--font-family--display, 'Instrument Serif', Georgia, 'Times New Roman', serif);
+	--gl-font-family-body: var(--wp--preset--font-family--body, 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+	--gl-font-family-mono: var(--wp--preset--font-family--mono, 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+
+	/* Type scale (DES-50). A richer editorial scale than the previous three
+	 * steps: `micro` (tiny mono chips/badges), `meta` (eyebrows, meta,
+	 * error/field text — PrincipalWP's smallest named step is `xs`, it has no
+	 * "small" slug), `body`, `lead` (search input, summary), `title` (card
+	 * titles, paired with the display family — the whole "titles become
+	 * editorial" move), `heading` (empty-state line, coverless title),
+	 * `h2`/`display`/`h1`/`hero` for the headline tiers. */
+	--gl-font-size-micro: 0.6875rem;
+	--gl-font-size-meta: var(--wp--preset--font-size--xs, 0.8125rem);
+	--gl-font-size-body: var(--wp--custom--font-size--body, 1rem);
+	--gl-font-size-lead: 1.0625rem;
+	--gl-font-size-title: var(--wp--preset--font-size--md, 1.25rem);
+	--gl-font-size-heading: 1.375rem;
+	--gl-font-size-h2: 1.5rem;
+	--gl-font-size-display: 1.75rem;
+	--gl-font-size-h1: 2rem;
+	--gl-font-size-hero: clamp( 1.9rem, 3vw, 2.5rem );
+
+	/* Line heights (DES-50) — every numeric line-height in game-library.css
+	 * reads one of these (AC-049's font/line-height guard). */
+	--gl-line-height-tight: 1;
+	--gl-line-height-heading: 1.15;
+	--gl-line-height-snug: 1.2;
+	--gl-line-height-body: 1.6;
+	--gl-line-height-relaxed: 1.65;
+
+	/* Letter-spacing / tracking — em, so it tracks the local font-size.
+	 * `--gl-tracking-wide` (0.06em, was 0.05em) matches the theme's own
+	 * eyebrow/h6 tracking; `-loose` and `-tight` are new (DES-50). */
+	--gl-tracking-wide: 0.06em;
+	--gl-tracking-loose: 0.1em;
+	--gl-tracking-tight: -0.01em;
+
+	/* Font weight. Instrument Serif ships 400 only, so `-normal` (400) is the
+	 * heading weight; `-medium` (500) is new for the mono labels/buttons;
+	 * `-strong` (600) is the emphasis weight. */
+	--gl-font-weight-normal: 400;
+	--gl-font-weight-medium: 500;
+	--gl-font-weight-strong: 600;
+
+	/* Elevation — "whisper only" (design §1). Shadow literals live here (not
+	 * game-library.css, AC-049) because a shadow is a bundle of lengths and an
+	 * rgb()/alpha colour the component sheet may declare none of. */
+	--gl-shadow-card: 0 1px 3px rgb(27 42 74 / 0.07), 0 1px 2px rgb(27 42 74 / 0.05);
+	--gl-shadow-hover: 0 6px 16px rgb(27 42 74 / 0.22);
+	--gl-shadow-thumb: 0 1px 2px rgb(27 42 74 / 0.3);
+
+	/* Status dot, click-to-edit cycle button, icon button, and their glyph
+	 * sizes (DES-50) — px HTML-attribute-shaped dimensions kept out of
+	 * game-library.css (AC-049). The cycle/icon buttons are rem so they grow
+	 * with the row's text. */
+	--gl-status-dot-size: 7px;
+	--gl-cycle-btn-size: 1.5rem;
+	--gl-icon-btn-size: 1.85rem;
+	--gl-icon-size: 17px;
+	--gl-icon-size-sm: 14px;
+
+	/* Visibility toggle switch geometry (DES-50) — the standard
+	 * checkbox-styled-as-switch pattern wrapping the existing
+	 * `#gl-profile-public-toggle` input. `-travel` is the thumb's checked
+	 * translate distance (track width − thumb − 2× inset). */
+	--gl-toggle-width: 42px;
+	--gl-toggle-height: 24px;
+	--gl-toggle-thumb: 18px;
+	--gl-toggle-inset: 3px;
+	--gl-toggle-travel: 18px;
+
+	/* Custom select chevron (DES-50) — the whole background layer, baked here
+	 * so game-library.css carries no data URI, no position/size literal, and
+	 * no `%23`-encoded colour of its own (AC-049). The stroke colour is
+	 * `--gl-color-text-muted`'s literal (#5B667C) and must be kept in step with
+	 * it by hand; a `var()` cannot resolve inside a `url()` data string. */
+	--gl-select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%235B667C' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 0.55rem center / 8px 5px;
+
+	/* Transition duration (DES-50, joining the DES-33 spinner duration) — the
+	 * hover/toggle transitions, all wrapped in prefers-reduced-motion. */
+	--gl-duration-transition: 0.15s;
+	--gl-duration-spinner: 1s;
+
+	/* Opacity (DES-33) — one "disabled" concept. */
+	--gl-opacity-disabled: 0.6;
+
+	/* Avatar sizes — px, not rem (DES-9): `get_avatar()` emits pixel width/
+	 * height attributes, so the CSS box must match in the same absolute unit.
+	 * `-lg` = member profile avatar; `-md` = actor/row avatar; `-sm` = holder
+	 * avatar (see the consumers in game-library.css). Unchanged by the
+	 * restyle — layout mechanics, not visual language. */
+	--gl-avatar-sm: 24px;
+	--gl-avatar-md: 40px;
+	--gl-avatar-lg: 64px;
+
+	/* Game-cover thumbnail width and spinner diameter (DES-39) — split from
+	 * the avatar steps so resizing an avatar never silently resizes a cover
+	 * thumbnail or the spinner. Unchanged by the restyle. */
+	--gl-thumb-cover-width: 64px;
+	--gl-spinner-size: 24px;
+
+	/* `.gl-visually-hidden`'s clip-to-1px-box offset (DES-47) — expressed as
+	 * calc(-1 * this) in game-library.css so AC-049(l)'s length scan (which
+	 * exempts only 0px/1px border widths, not a negative margin) does not trip
+	 * on a literal -1px. Unchanged by the restyle. */
+	--gl-visually-hidden-offset: 1px;
+
+	/* Container widths — the same variables a theme.json `settings.layout`
+	 * configuration exposes; PrincipalWP sets these to 1040px/1240px. */
+	--gl-container-content: var(--wp--style--global--content-size, 1040px);
+	--gl-container-wide: var(--wp--style--global--wide-size, 1240px);
+
+	/* Focus ring — DES-51 re-points the base ring at `--gl-color-action`
+	 * (cranberry, design line 188), now that action is PrincipalWP's real,
+	 * contrast-verified brand colour (7.86:1 on white), not the unverified
+	 * literal DES-25 severed it from. The one surface where cranberry-on-ground
+	 * fails is the navy `.gl-header-band` (cranberry 1.81:1 on navy) — handled
+	 * by a scoped `outline-color: var(--gl-color-dark-focus)` override in
+	 * game-library.css, not by weakening this default. */
+	--gl-focus-ring-color: var(--gl-color-action);
+	--gl-focus-ring-width: 2px;
+	--gl-focus-ring-offset: 2px;
+
+	/* Media — cover aspect ratio (IGDB's real cover_big proportion, kept in
+	 * sync with Game_Mapper::COVER_BIG_WIDTH/HEIGHT), grid gap, and the
+	 * minimum card width the grids use in their minmax() track. DES-50 retunes
+	 * the two grid-density tokens (Tension B, design §2): a tighter card
+	 * minimum and a slightly airier gap. */
+	--gl-cover-aspect-ratio: 264 / 374;
+	--gl-grid-gap: 1.25rem;
+	--gl-grid-card-min: 11.5rem;
+
+	/* /games/{slug}/'s hero cover (MR-1) — IGDB's fixed cover_big pixel size,
+	 * matching the width/height attributes game-single.php sets on the hero
+	 * <img> so the browser reserves the box before the image loads (CLS).
+	 * Unchanged by the restyle. */
+	--gl-game-single-cover-width: 264px;
+	--gl-game-single-cover-height: 374px;
+
+	/* /games/{slug}/ hero meta column's own flex-basis (DES-48) — independently
+	 * tunable from --gl-grid-card-min even though seeded to the same value.
+	 * Unchanged by the restyle. */
+	--gl-game-single-meta-min: 13.75rem;
+
+	/* Reserved heights so a notice/field-error appearing never shifts layout
+	 * (PF-4/DES-28) — sized for one line of body/meta text plus chrome.
+	 * Unchanged by the restyle. */
+	--gl-notice-reserved-height: 3rem;
+	--gl-field-error-reserved-height: 1.25rem;
+
+	/* The IGDB search-results region on /my-library/ (PF-3) — a fixed
+	 * scrollable height so every search state occupies the identical box.
+	 * Unchanged by the restyle. */
+	--gl-search-results-height: 24rem;
+
+	/* DES-50 (restyle §C, reworked): the quick-look is now an inline per-card
+	 * disclosure (`.gl-game-card__detail`), not a shared modal <dialog>, so the
+	 * former panel-geometry tokens (`--gl-detail-panel-max`,
+	 * `--gl-detail-cover-width`) are retired — the region flows inside the card's
+	 * own column and reuses the shared spacing/type/elevation tokens above.
+	 *
+	 * Sideways-float restyle (this task): on wide screens (game-library.css's
+	 * own `@media (min-width: 64em)` — a breakpoint kept in sync with
+	 * game-detail.js's `WIDE_BREAKPOINT_QUERY` by hand, since a custom
+	 * property cannot be read inside an @media condition) the quick-look
+	 * floats beside the card instead of expanding downward in place.
+	 * `--gl-quicklook-width` is the target panel width: a concrete literal
+	 * (not a calc() off `--gl-grid-card-min`, so the two can be tuned
+	 * independently) landing at roughly 2x a card's typical RENDERED width
+	 * in this grid's common 3-5 column desktop layouts (per --gl-grid-gap and
+	 * the 1240px `--gl-container-wide` cap, a rendered card usually runs
+	 * ~200-230px, well above the bare --gl-grid-card-min floor) while still
+	 * comfortably fitting the container. It is a ceiling, not a guarantee —
+	 * game-library.css caps it further with `min(…, 92vw)` so it can never
+	 * force horizontal page scroll on its own, and game-detail.js clamps the
+	 * actual applied width per expand (written back as
+	 * `--gl-quicklook-computed-width` on the card) to whatever space is
+	 * genuinely free in the chosen direction, so a card in the middle of a
+	 * many-column row never overflows either edge. `--gl-z-quicklook-panel`
+	 * keeps the floating panel above every sibling card (only one card is
+	 * ever expanded at a time, so this only needs to clear z-index:auto
+	 * siblings, not compete with another expanded card). The widen/fade
+	 * duration+delay pairs stage the animation so it reads (a) float/lift —
+	 * the existing `--gl-duration-transition` lift below, unchanged — (b)
+	 * widen (c) fade, each stage's transition-delay picking up roughly where
+	 * the previous one finishes; collapse reverses the same declarations. */
+	--gl-quicklook-width: 27.75rem;
+	--gl-z-quicklook-panel: 20;
+	--gl-duration-widen: 0.16s;
+	--gl-delay-widen: 0.14s;
+	--gl-duration-fade: 0.12s;
+	--gl-delay-fade: 0.26s;
+}

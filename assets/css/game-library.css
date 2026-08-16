@@ -1,0 +1,2163 @@
+/**
+ * Game Library component stylesheet.
+ *
+ * PF-1 (cycle-5): the design rationale below is inline and load-bearing by
+ * deliberate human ruling, not accidental bloat — this file, not a
+ * separate doc, is its authoritative home. See DD-007/the Boundaries
+ * section before proposing to relocate, trim, or duplicate it elsewhere.
+ *
+ * DES-50 (PrincipalWP restyle): every colour, radius, spacing step, type
+ * size, avatar size, container width, focus-ring value, media value,
+ * shadow, font stack, letter-spacing, animation duration, opacity,
+ * font-weight, and control/icon dimension below is a `var(--gl-…)` read
+ * from `tokens.css` (enqueued after `fonts.css`, before this file — see
+ * `includes/class-assets.php`). The ONLY literals in this file are `0`, the
+ * `1px` border widths of hairline rules, unitless `flex`/`z-index`/aspect
+ * numbers, percentages, `ch`/`fr`/`vw` measures, and `em`-based responsive
+ * breakpoints (deliberately `em`, never `px`, so AC-049(l)'s px/rem length
+ * scan never trips on a media query). Nothing else is a raw length,
+ * duration, colour, font stack, or magic number (AC-049).
+ *
+ * Class names below are the markup contract the template tasks render
+ * against. Restyle additions this cycle (all additive — no existing `gl-`
+ * class or JS data-hook is renamed or removed):
+ *
+ * - `.gl-header-band[__eyebrow|__sub|__actions]`  navy full-bleed section on
+ *                                /my-library/ and /games/{slug}/ (design §2/§11)
+ * - `.gl-page-head`             light eyebrow+<h1> wrapper on the other routes
+ * - `.gl-game-card__cover-link` the quick-look trigger wrapping `__cover`
+ * - `.gl-game-card__status` / `.gl-status-cycle-btn`
+ *                                the click-to-edit status control (design §3)
+ * - `.gl-button--icon` / `.gl-button--small`   new button modifiers
+ * - `.gl-toggle[__track|__thumb]` / `.gl-visibility-toggle__label`
+ *                                the visibility switch skin (design §3)
+ * - `.gl-empty-state__eyebrow` / `.gl-empty-state__line`   empty-state parts
+ * - `.gl-notice--warm`          shipped available-but-unused (§F.3)
+ * - `.gl-game-card__detail[-close|-meta|-row|-label|-list|-summary|-status|-fullpage]`
+ *                                the per-card inline quick-look disclosure
+ *                                (design §3, §13; reworked §C — replaced the
+ *                                shared <dialog>), JS-populated by game-detail.js
+ *
+ * Header/footer redesign task (separate from the DES-50 cycle above, added
+ * later): `.gl-site-header[__row|__brand|__mark|__wordmark|__nav|__link|
+ * __menu-toggle|__menu-icon|__menu|__menu-list]` and the matching
+ * `.gl-site-footer[__row|__brand|__mark|__wordmark|__nav|__meta]` — the
+ * plugin's own sitewide navy nav bar and its footer bookend, rendered by
+ * `site-header.php`/`site-footer.php` on every route. See the "Site chrome"
+ * section near the end of this file for the full rationale.
+ *
+ * DES-24: the classes below are deliberate, undocumented-by-design
+ * theme-override hooks — a route's `<main>` wrapper carries its own
+ * `gl-{route}` class purely so a theme can target one route; none carry a
+ * rule of their own here, so absence reads as intentional, not a missed style.
+ *
+ * @package Game_Library
+ */
+
+/* Base plugin typography (DES-50). Scoped to the plugin root's `.gl-root` hook
+ * (carried by the `<main id="gl-main">` wrapper every route renders) and the
+ * shared quick-look panel so the self-hosted body font and navy text colour
+ * never leak into the theme's own header/footer chrome. DES-103: a class, not
+ * the `#gl-main` id — the id injected 1-0-0 specificity into an otherwise flat,
+ * class-based sheet, making a theme/child override of the plugin's base font
+ * harder than needed; `.gl-root` scopes it at 0-1-0. The id stays on the
+ * element for JS/anchors — it is just no longer styled through. Component rules
+ * below set the display/mono family on their own elements; this only
+ * establishes the inherited default. */
+
+.gl-root {
+	font-family: var(--gl-font-family-body);
+	font-size: var(--gl-font-size-body);
+	line-height: var(--gl-line-height-body);
+	color: var(--gl-color-text);
+}
+
+/* Focus ring — every interactive element gets a visible :focus-visible
+ * outline in the brand cranberry (DES-51); no rule in this file sets
+ * `outline: none`. Declared near the top (low, general specificity) so every
+ * component-level rule below can still layer its own state styling without an
+ * ascending-specificity lint conflict. The one surface where cranberry fails
+ * (the navy header band) gets a scoped white override immediately below
+ * (DES-101). */
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+	outline: var(--gl-focus-ring-width) solid var(--gl-focus-ring-color);
+	outline-offset: var(--gl-focus-ring-offset);
+	border-radius: var(--gl-radius-sm);
+}
+
+/* DES-101: on the navy `.gl-header-band` the base cranberry ring measures only
+ * 1.81:1 against navy (SC 1.4.11 fails), so every focusable band control takes
+ * the white `--gl-color-dark-focus` outline colour (~14:1) instead — only the
+ * colour is overridden; the base ring's width/offset/radius stay. This general
+ * rule (0,2,0, above the base 0,1,1) covers any future band control for free;
+ * the visibility toggle's own ring is painted on `.gl-toggle__track` (the input
+ * is opacity:0), so its matching override sits beside the toggle rules below,
+ * where the cascade lets specificity ascend. */
+
+.gl-header-band :focus-visible,
+.gl-site-header :focus-visible,
+.gl-site-footer :focus-visible {
+	outline-color: var(--gl-color-dark-focus);
+}
+
+/* DES-13: the plugin's own front-end visually-hidden utility. */
+.gl-visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+
+	/* DES-47: calc(-1 * token), not a negative one-pixel literal — AC-049(l)
+	 * exempts only 1px border widths, not a negative margin. */
+	margin: calc( -1 * var(--gl-visually-hidden-offset) );
+	padding: 0;
+	border: 0;
+	clip-path: inset( 50% );
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+/* Heading typography (DES-50). The editorial move: card/page titles and
+ * member names in the serif display family, navy heading colour, tight
+ * tracking. Font-size stays per-component (they differ). Declared before the
+ * dark-surface overrides so those (equal or higher specificity) win in
+ * source order without descending-specificity conflicts. */
+
+.gl-page-head h1,
+.gl-header-band h1,
+.gl-member-header h1,
+.gl-game-single__meta h1,
+.gl-game-single h2,
+.gl-join h1,
+.gl-game-card__title,
+.gl-search-result__title,
+.gl-member-row__name,
+.gl-empty-state__line {
+	font-family: var(--gl-font-family-display);
+	font-weight: var(--gl-font-weight-normal);
+	line-height: var(--gl-line-height-heading);
+	letter-spacing: var(--gl-tracking-tight);
+	color: var(--gl-color-heading);
+	margin: 0;
+}
+
+/* Layout. */
+
+.gl-container {
+	max-width: var(--gl-container-content);
+	margin-inline: auto;
+	padding-inline: var(--gl-space-md);
+}
+
+.gl-container--wide {
+	max-width: var(--gl-container-wide);
+}
+
+/* Header band (design §2/§11) — the full-bleed navy section. Its own inner
+ * `.gl-container` re-establishes the reading width, so `<main>` on the two
+ * band routes stops carrying `gl-container` itself (see §13). */
+
+.gl-header-band {
+	background: var(--gl-color-heading);
+	color: var(--gl-color-dark-body);
+	padding-block: var(--gl-space-lg);
+	margin-block-end: var(--gl-space-lg);
+}
+
+.gl-header-band .gl-container {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: var(--gl-space-md);
+}
+
+.gl-header-band h1 {
+	font-size: var(--gl-font-size-hero);
+	color: var(--gl-color-dark-heading);
+}
+
+.gl-header-band__eyebrow {
+	display: block;
+	font-family: var(--gl-font-family-mono);
+	font-size: var(--gl-font-size-meta);
+	font-weight: var(--gl-font-weight-medium);
+	text-transform: uppercase;
+	letter-spacing: var(--gl-tracking-wide);
+	color: var(--gl-color-dark-accent);
+}
+
+.gl-header-band__sub {
+	margin-block-start: var(--gl-space-xs);
+	font-size: var(--gl-font-size-body);
+	color: var(--gl-color-dark-body);
+}
+
+.gl-header-band__actions {
+	display: flex;
+	align-items: center;
+	gap: var(--gl-space-sm);
+}
+
+/* Page head (design §6/§7/§8/§10) — the light-surface eyebrow+<h1> wrapper on
+ * every non-band route. */
+
+.gl-page-head {
+	margin-block-end: var(--gl-space-md);
+}
+
+.gl-page-head h1 {
+	font-size: var(--gl-font-size-h1);
+}
+
+.gl-page-head__eyebrow {
+	display: block;
+	font-family: var(--gl-font-family-mono);
+	font-size: var(--gl-font-size-meta);
+	font-weight: var(--gl-font-weight-medium);
+	text-transform: uppercase;
+	letter-spacing: var(--gl-tracking-wide);
+	color: var(--gl-color-action);
+	margin-block-end: var(--gl-space-xs);
+}
+
+/* Library / catalog / search-result grid. */
+
+.gl-library-grid {
+	display: grid;
+
+	/* DES-30: min( token, 100% ) guards SC 1.4.4 — at the narrowest viewport
+	 * with text at 200% the un-guarded rem minimum could exceed the viewport
+	 * width and scroll the page horizontally. */
+	grid-template-columns: repeat( auto-fill, minmax( min( var( --gl-grid-card-min ), 100% ), 1fr ) );
+
+	/* DES-50 (restyle §C, reworked): top-align tracks so an expanded card
+	 * (`.is-expanded`, which grows downward to reveal its in-place quick-look
+	 * detail) never stretches its shorter row-mates to match its height — they
+	 * stay at their own size while it lifts above them. */
+	align-items: start;
+	gap: var(--gl-grid-gap);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+/* Game card. */
+
+.gl-game-card {
+	display: flex;
+	flex-direction: column;
+	background: var(--gl-color-surface);
+	border: 1px solid var(--gl-color-border);
+	border-radius: var(--gl-radius-md);
+	box-shadow: var(--gl-shadow-card);
+	overflow: hidden;
+}
+
+.gl-game-card:hover {
+	border-color: var(--gl-color-border-strong);
+	box-shadow: var(--gl-shadow-hover);
+}
+
+/* DES-50 (restyle §C, reworked): the expanded quick-look state. The card lifts
+ * on the z-axis — a stronger shadow (the shared hover-elevation token) and a
+ * z-index so it stacks above its neighbours — while its `.gl-game-card__detail`
+ * region below reveals the fetched detail in place of the former modal dialog.
+ * The small upward rise itself is applied (and transitioned) only under
+ * prefers-reduced-motion: no-preference, so a reduced-motion visitor still gets
+ * the elevation cue without positional movement. */
+.gl-game-card.is-expanded {
+	position: relative;
+	z-index: 1;
+	border-color: var(--gl-color-border-strong);
+	box-shadow: var(--gl-shadow-hover);
+}
+
+@media ( prefers-reduced-motion: no-preference ) {
+
+	.gl-game-card.is-expanded {
+		transform: translateY( calc( -1 * var(--gl-space-xs) ) );
+	}
+}
+
+/* Quick-look trigger (design §13) — a real link to /games/{slug}/ wrapping
+ * the cover, so it works with JS off; game-detail.js (next coder) intercepts
+ * the click to open the shared dialog instead. */
+.gl-game-card__cover-link {
+	display: block;
+}
+
+.gl-game-card__cover {
+	position: relative;
+	aspect-ratio: var(--gl-cover-aspect-ratio);
+
+	/* DES-34: min-height: 0 removes the flex-item auto floor so the
+	 * aspect-ratio box always wins over an <img>'s intrinsic height. */
+	min-height: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden;
+	background: var(--gl-color-surface-muted);
+
+	/* The card rounds its top corners via its own overflow: hidden in the
+	 * resting state, but the wide-screen quick-look sets overflow: visible on
+	 * the card (so the floating panel can escape the card box) — which would
+	 * otherwise leave this cover's top corners square as the card lifts.
+	 * Rounding the cover's own top corners here (it already clips its <img>
+	 * with overflow: hidden above) keeps the cover rounded independently of
+	 * the card's own clipping. */
+	border-top-left-radius: var(--gl-radius-md);
+	border-top-right-radius: var(--gl-radius-md);
+}
+
+.gl-game-card__cover img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+/* DES-23: the search-result placeholder is listed alongside this block's own
+ * selector — search.js borrows the pattern. The design paints the coverless
+ * placeholder as a navy panel with a mono caption so a missing image never
+ * reads as a broken one. */
+.gl-game-card__cover-placeholder,
+.gl-search-result__cover-placeholder {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	padding: var(--gl-space-sm);
+	text-align: center;
+	background: var(--gl-color-heading);
+	color: var(--gl-color-dark-body);
+	font-family: var(--gl-font-family-mono);
+	font-size: var(--gl-font-size-micro);
+	text-transform: uppercase;
+	letter-spacing: var(--gl-tracking-loose);
+}
+
+.gl-game-card__body {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	gap: var(--gl-space-xs);
+	padding: var(--gl-space-sm) var(--gl-space-sm) var(--gl-space-xs);
+}
+
+/* DES-23: the search-result title borrows this block's title rule. */
+.gl-game-card__title,
+.gl-search-result__title {
+	font-size: var(--gl-font-size-title);
+	line-height: var(--gl-line-height-snug);
+}
+
+.gl-game-card__title a {
+	color: inherit;
+	text-decoration: none;
+}
+
+.gl-game-card__title a:where(:hover) {
+	text-decoration: underline;
+	text-decoration-color: var(--gl-color-action);
+	text-underline-offset: var(--gl-focus-ring-offset);
+}
+
+/* DES-19: the actions row's horizontal padding matches the card body's. The
+ * card action row now merges status + click-to-edit + Remove onto one line
+ * (design §13, row 9); the release-year meta paragraph is gone everywhere. */
+.gl-game-card__actions {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: var(--gl-space-xs);
+	margin-top: auto;
+	padding: 0 var(--gl-space-sm) var(--gl-space-xs);
+}
+
+/* Status control — badge + a small "cycle status" trigger that library.js
+ * swaps for the real <select> in place (design §3). */
+
+/* DES-40/PF-3 pattern (see .gl-search-results below): scoped to :not([hidden])
+ * so library.js's showStatusSelect()/hideStatusSelect() `display.hidden`
+ * toggle actually hides this cluster — an unconditional `display: inline-flex`
+ * here would out-cascade the browser's own `[hidden] { display: none }` UA
+ * rule (author normal-priority beats UA normal-priority regardless of
+ * selector specificity), leaving the badge+trigger visibly stacked on top of
+ * the revealed <select> instead of swapping for it. */
+.gl-game-card__status:not( [hidden] ) {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--gl-space-xs);
+}
+
+.gl-status-cycle-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	width: var(--gl-cycle-btn-size);
+	height: var(--gl-cycle-btn-size);
+	padding: 0;
+	border: 0;
+	border-radius: var(--gl-radius-pill);
+	background: transparent;
+	color: var(--gl-color-text-muted);
+	cursor: pointer;
+}
+
+.gl-status-cycle-btn svg {
+	width: var(--gl-icon-size-sm);
+	height: var(--gl-icon-size-sm);
+}
+
+.gl-status-cycle-btn:hover {
+	background: var(--gl-color-surface-muted);
+	color: var(--gl-color-heading);
+}
+
+/* Status badge — dot + uppercase mono label, no fill (design §2A). The dot is
+ * a `::before` pseudo-element (no DOM change, §13); the text node is never
+ * hidden (AC-015). */
+
+.gl-status-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--gl-space-xs);
+	font-family: var(--gl-font-family-mono);
+	font-size: var(--gl-font-size-micro);
+	font-weight: var(--gl-font-weight-medium);
+	line-height: var(--gl-line-height-tight);
+	text-transform: uppercase;
+	letter-spacing: var(--gl-tracking-wide);
+	color: var(--gl-color-text);
+	white-space: nowrap;
+}
+
+.gl-status-badge::before {
+	content: "";
+	flex-shrink: 0;
+	width: var(--gl-status-dot-size);
+	height: var(--gl-status-dot-size);
+	border-radius: var(--gl-radius-pill);
+}
+
+/* DES-18: scoped to the flex-column card body so the badge sits at the row's
+ * start; declared before the dot-colour modifiers so specificity ascends. */
+.gl-game-card__body .gl-status-badge {
+	align-self: start;
+}
+
+.gl-status-badge--playing::before {
+	background: var(--gl-color-status-playing);
+}
+
+.gl-status-badge--finished::before {
+	background: var(--gl-color-status-finished);
+}
+
+.gl-status-badge--backlog::before {
+	background: var(--gl-color-status-backlog);
+}
+
+.gl-status-badge--wishlist::before {
+	background: var(--gl-color-status-wishlist);
+}
+
+/* Status filters — sharp underlined mono tabs, not filled pills (design §2,
+ * §13). Same <a>/aria-current markup. */
+
+.gl-status-filters {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--gl-space-xs);
+	margin: 0 0 var(--gl-space-md);
+	padding: 0;
+	list-style: none;
+}
+
+.gl-status-filters a {
+	display: inline-block;
+	padding: var(--gl-space-xs) var(--gl-space-sm);
+	border-bottom: 1px solid transparent;
+	font-family: var(--gl-font-family-mono);
+	font-size: var(--gl-font-size-micro);
+	text-transform: uppercase;
+	letter-spacing: var(--gl-tracking-wide);
+	color: var(--gl-color-text-muted);
+	text-decoration: none;
+}
+
+.gl-status-filters a:where(:hover) {
+	color: var(--gl-color-heading);
+}
+
+.gl-status-filters a[aria-current="true"] {
+	border-bottom-color: var(--gl-color-action);
+	color: var(--gl-color-action);
+	font-weight: var(--gl-font-weight-medium);
+}
+
+/* Selects — custom chevron + compact mono style so a status select reads
+ * closer to the badge beside it than to a boxed text input (design §13). The
+ * chevron background layer and its colour live entirely in
+ * `--gl-select-chevron` (tokens.css) so this file carries no data URI. */
+
+.gl-field select,
+.gl-game-card__actions select,
+.gl-search-result__actions select {
+	appearance: none;
+	padding: var(--gl-space-xs) var(--gl-space-md) var(--gl-space-xs) var(--gl-space-sm);
+	border: 1px solid var(--gl-color-border-strong);
+	border-radius: var(--gl-radius-sm);
+	background: var(--gl-color-surface) var(--gl-select-chevron);
+	color: var(--gl-color-text);
+	font-family: var(--gl-font-family-mono);
+	font-size: var(--gl-font-size-micro);
+	text-transform: uppercase;
+	letter-spacing: var(--gl-tracking-wide);
+	cursor: pointer;
+}
+
+/* Buttons. */
+
+.gl-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--gl-space-xs);
+	padding: var(--gl-space-sm) var(--gl-space-md);
+	border: 1px solid transparent;
+	border-radius: var(--gl-radius-sm);
+	font-family: var(--gl-font-family-body);
+	font-size: var(--gl-font-size-body);
+	font-weight: var(--gl-font-weight-medium);
+	line-height: var(--gl-line-height-snug);
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.gl-button--primary {
+	background: var(--gl-color-action);
+	color: var(--gl-color-action-on);
+}
+
+.gl-button--primary:hover {
+	background: var(--gl-color-action-hover);
+}
+
+.gl-button--primary:active {
+	background: var(--gl-color-action-active);
+}
+
+.gl-button--secondary {
+	background: transparent;
+	border-color: var(--gl-color-action);
+	color: var(--gl-color-action);
+}
+
+.gl-button--secondary:hover {
+	background: var(--gl-color-action);
+	color: var(--gl-color-action-on);
+}
+
+/* social.js toggles `is-active` on the Follow control at "Following" state. */
+.gl-button--secondary.is-active {
+	background: var(--gl-color-action);
+	color: var(--gl-color-action-on);
+}
+
+.gl-button--danger {
+	background: var(--gl-color-surface);
+	border-color: var(--gl-color-error-border);
+	color: var(--gl-color-error-text);
+}
+
+.gl-button--danger:hover {
+	background: var(--gl-color-error-bg);
+}
+
+/* New modifiers (design §3, §13). --small: an uppercase mono compact CTA.
+ * --icon: a square, chrome-less button holding only an inline SVG (the Remove
+ * trash glyph) — same `data-gl-remove`/aria-label, only the visible text node
+ * becomes the icon (row 9/12). */
+.gl-button--small {
+	padding: var(--gl-space-xs) var(--gl-space-sm);
+	font-family: var(--gl-font-family-mono);
+	font-size: var(--gl-font-size-micro);
+	text-transform: uppercase;
+	letter-spacing: var(--gl-tracking-loose);
+}
+
+.gl-button--icon {
+	flex-shrink: 0;
+	width: var(--gl-icon-btn-size);
+	height: var(--gl-icon-btn-size);
+	padding: 0;
+	border-color: transparent;
+	background: transparent;
+}
+
+.gl-button--icon svg {
+	width: var(--gl-icon-size);
+	height: var(--gl-icon-size);
+}
+
+.gl-button--icon.gl-button--danger:hover {
+	border-color: var(--gl-color-error-border);
+	background: var(--gl-color-error-bg);
+}
+
+.gl-button[disabled] {
+	opacity: var(--gl-opacity-disabled);
+	cursor: not-allowed;
+}
+
+/* Remove icon pushed to the far end of the merged action row (design §13). */
+.gl-game-card__actions .gl-button--icon {
+	margin-inline-start: auto;
+}
+
+/* DES-15: placed after every .gl-button rule so this higher-specificity
+ * descendant never precedes a lower-specificity .gl-button rule. */
+.gl-member-header .gl-button {
+	margin-inline-start: auto;
+}
+
+/* Visibility toggle switch (design §3, §13) — the standard
+ * checkbox-styled-as-switch pattern wrapping the existing
+ * `#gl-profile-public-toggle` input in two decorative spans; library.js's
+ * binding to `[data-gl-visibility-toggle]` is unchanged. */
+
+.gl-visibility-toggle {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: var(--gl-space-sm);
+	margin-block-end: var(--gl-space-md);
+}
+
+.gl-toggle {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	flex-shrink: 0;
+	width: var(--gl-toggle-width);
+	height: var(--gl-toggle-height);
+}
+
+.gl-toggle input {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	opacity: 0;
+	cursor: pointer;
+}
+
+/* Both decorative, aria-hidden="true" (my-library.php) and declared AFTER
+ * `.gl-toggle input` in source order — with no z-index on either sibling,
+ * that source order alone puts them on top of the input in paint order, so
+ * without `pointer-events: none` they silently swallow a direct click/tap on
+ * the switch graphic itself (the input stays reachable only via its external
+ * <label for>, not by clicking the toggle a user actually sees). */
+.gl-toggle__track {
+	position: absolute;
+	inset: 0;
+	border-radius: var(--gl-radius-pill);
+	background: var(--gl-color-border-strong);
+	pointer-events: none;
+}
+
+.gl-toggle__thumb {
+	position: absolute;
+	top: var(--gl-toggle-inset);
+	left: var(--gl-toggle-inset);
+	width: var(--gl-toggle-thumb);
+	height: var(--gl-toggle-thumb);
+	border-radius: var(--gl-radius-pill);
+	background: var(--gl-color-surface);
+	box-shadow: var(--gl-shadow-thumb);
+	pointer-events: none;
+}
+
+.gl-toggle input:checked ~ .gl-toggle__track {
+	background: var(--gl-color-action);
+}
+
+.gl-toggle input:checked ~ .gl-toggle__thumb {
+	transform: translateX( var(--gl-toggle-travel) );
+}
+
+.gl-toggle input:focus-visible ~ .gl-toggle__track {
+	outline: var(--gl-focus-ring-width) solid var(--gl-focus-ring-color);
+	outline-offset: var(--gl-focus-ring-offset);
+}
+
+/* DES-101: inside the navy band the toggle's visible ring (on the track, since
+ * the input is opacity:0) takes the white focus colour too. Placed after the
+ * toggle's own focus rule so specificity ascends (0,4,1 over 0,3,1) — the base
+ * ring's width/offset carry through, only the colour changes. */
+.gl-header-band .gl-toggle input:focus-visible ~ .gl-toggle__track {
+	outline-color: var(--gl-color-dark-focus);
+}
+
+.gl-visibility-toggle__label {
+	font-size: var(--gl-font-size-body);
+}
+
+/* Forms. */
+
+.gl-field {
+	display: flex;
+	flex-direction: column;
+	gap: var(--gl-space-xs);
+	margin-block-end: var(--gl-space-md);
+}
+
+.gl-field label {
+	font-family: var(--gl-font-family-mono);
+	font-size: var(--gl-font-size-micro);
+	font-weight: var(--gl-font-weight-medium);
+	text-transform: uppercase;
+	letter-spacing: var(--gl-tracking-loose);
+	color: var(--gl-color-heading);
+}
+
+.gl-field input[type="text"],
+.gl-field input[type="email"],
+.gl-field input[type="password"],
+.gl-field input[type="search"],
+.gl-field textarea,
+.gl-search-form input[type="search"] {
+	padding: var(--gl-space-sm);
+	border: 1px solid var(--gl-color-border-strong);
+	border-radius: var(--gl-radius-sm);
+	background: var(--gl-color-surface);
+	color: var(--gl-color-text);
+	font-family: var(--gl-font-family-body);
+	font-size: var(--gl-font-size-body);
+}
+
+.gl-field input::placeholder {
+	color: var(--gl-color-text-muted);
+}
+
+.gl-field[data-invalid="true"] input,
+.gl-field[data-invalid="true"] select,
+.gl-field[data-invalid="true"] textarea {
+
+	/* Form-level validation stays brand cranberry (design §2), distinct from
+	 * the error Notice ramp; on white it measures 7.86:1, well past the 3:1
+	 * border floor. */
+	border-color: var(--gl-color-field-error);
+}
+
+/* The closed status select renders its own colour, not the selected option's
+ * inline style — :has() paints the box to match the already-correct open list
+ * (design §13). A progressive enhancement: where :has() is unsupported the
+ * control simply keeps the body text colour. Declared here, after the
+ * higher-specificity would-be conflicts, so specificity ascends. */
+.gl-game-card__actions select:has( option[value="playing"]:checked ),
+.gl-search-result__actions select:has( option[value="playing"]:checked ) {
+	color: var(--gl-color-status-playing);
+}
+
+.gl-game-card__actions select:has( option[value="finished"]:checked ),
+.gl-search-result__actions select:has( option[value="finished"]:checked ) {
+	color: var(--gl-color-status-finished);
+}
+
+.gl-game-card__actions select:has( option[value="backlog"]:checked ),
+.gl-search-result__actions select:has( option[value="backlog"]:checked ) {
+	color: var(--gl-color-status-backlog);
+}
+
+.gl-game-card__actions select:has( option[value="wishlist"]:checked ),
+.gl-search-result__actions select:has( option[value="wishlist"]:checked ) {
+	color: var(--gl-color-status-wishlist);
+}
+
+/* DES-102: the OPEN dropdown's per-option colour — the same status->colour
+ * mapping the closed-select `:has()` rules above express, authored here beside
+ * them instead of as a hand-authored inline `style` on every <option>
+ * (game-card.php) and a matching `option.style.color` in search.js. Scoped to
+ * the two status-select homes (owner card + IGDB search picker) so the open
+ * list, the closed control, and the badge all colour-match from one source.
+ * Native <option> colouring is Firefox/Blink-only either way — the selector has
+ * the same support the inline form had, and is the cleaner single home. */
+.gl-game-card__actions select option[value="playing"],
+.gl-search-result__actions select option[value="playing"] {
+	color: var(--gl-color-status-playing);
+}
+
+.gl-game-card__actions select option[value="finished"],
+.gl-search-result__actions select option[value="finished"] {
+	color: var(--gl-color-status-finished);
+}
+
+.gl-game-card__actions select option[value="backlog"],
+.gl-search-result__actions select option[value="backlog"] {
+	color: var(--gl-color-status-backlog);
+}
+
+.gl-game-card__actions select option[value="wishlist"],
+.gl-search-result__actions select option[value="wishlist"] {
+	color: var(--gl-color-status-wishlist);
+}
+
+/* DES-32: block-agnostic (used inside .gl-field, .gl-game-card__actions, an
+ * invite row, a search result, and a JS-created follow-control error). PF-4
+ * reserves a min-height so an initially-empty slot never shifts on first
+ * error. Now brand cranberry mono (design). */
+.gl-error-text {
+	min-height: var(--gl-field-error-reserved-height);
+	color: var(--gl-color-field-error);
+	font-family: var(--gl-font-family-mono);
+	font-size: var(--gl-font-size-meta);
+}
+
+/* A visibility error slot rendered inside the navy header band needs a legible
+ * light colour — cranberry measures 1.81:1 on navy (design §9). role="alert"
+ * still carries the semantics; white is the legible carrier here. */
+.gl-header-band .gl-error-text {
+	color: var(--gl-color-dark-heading);
+}
+
+.gl-field-hint {
+	font-size: var(--gl-font-size-meta);
+	color: var(--gl-color-text-muted);
+}
+
+/* Notices — light-bg / dark-text / mid-tone-border semantic ramps (design §1,
+ * §13). `--info` gains a genuine info hue for the first time; `--warm` is
+ * shipped available-but-unused per §F.3. */
+
+.gl-notice {
+	padding: var(--gl-space-sm) var(--gl-space-md);
+	border: 1px solid transparent;
+	border-radius: var(--gl-radius-sm);
+	font-size: var(--gl-font-size-body);
+	margin-block-end: var(--gl-space-md);
+}
+
+.gl-notice--info {
+	border-color: var(--gl-color-info-border);
+	background: var(--gl-color-info-bg);
+	color: var(--gl-color-info-text);
+}
+
+.gl-notice--success {
+	border-color: var(--gl-color-success-border);
+	background: var(--gl-color-success-bg);
+	color: var(--gl-color-success-text);
+}
+
+.gl-notice--error {
+	border-color: var(--gl-color-error-border);
+	background: var(--gl-color-error-bg);
+	color: var(--gl-color-error-text);
+}
+
+/* §F.3: available-but-unused warm modifier (a "welcome back" moment a future
+ * flow can wire) — no template consumer today, part of the component sheet. */
+.gl-notice--warm {
+	border-color: var(--gl-color-action);
+	border-inline-start-width: var(--gl-focus-ring-width);
+	background: var(--gl-color-surface-warm);
+	color: var(--gl-color-action-active);
+}
+
+.gl-notice--warm em {
+	font-family: var(--gl-font-family-display);
+	font-style: italic;
+}
+
+/* PF-4/DES-28/DES-29: the create-invite form's error/success notices share
+ * ONE reserved slot so a create response toggling between them never shifts
+ * layout. */
+.gl-invite-form-notices {
+	display: grid;
+	min-height: var(--gl-notice-reserved-height);
+	margin-block-end: var(--gl-space-md);
+}
+
+.gl-invite-form-notices .gl-invite-form-notice {
+	grid-area: 1 / 1;
+	margin-block-end: 0;
+}
+
+/* DES-29: :empty hides an empty notice's chrome while keeping the live region
+ * in the accessibility tree at all times. */
+.gl-invite-form-notice:empty {
+	border-color: transparent;
+	background: none;
+}
+
+/* Search box (design §4). */
+
+.gl-search-form {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--gl-space-sm);
+	margin-block-end: var(--gl-space-sm);
+}
+
+.gl-search-form input[type="search"] {
+	flex: 1;
+	min-width: 0;
+	font-size: var(--gl-font-size-lead);
+}
+
+/* DES-40/PF-3: one rule scoped to :not([hidden]); reserves the identical box
+ * for every search state so a response replacing the spinner reflows nothing. */
+.gl-search-results:not( [hidden] ) {
+	display: flex;
+	flex-direction: column;
+	gap: var(--gl-space-xs);
+	height: var(--gl-search-results-height);
+	padding: var(--gl-space-xs);
+	border: 1px solid var(--gl-color-border);
+	border-radius: var(--gl-radius-md);
+	background: var(--gl-color-surface-muted);
+	overflow-y: auto;
+}
+
+.gl-search-loading {
+	display: flex;
+	align-items: center;
+	gap: var(--gl-space-sm);
+	padding: var(--gl-space-md);
+	color: var(--gl-color-text-muted);
+	font-family: var(--gl-font-family-mono);
+	font-size: var(--gl-font-size-meta);
+	text-transform: uppercase;
+	letter-spacing: var(--gl-tracking-wide);
+}
+
+.gl-search-result {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: var(--gl-space-sm);
+	padding: var(--gl-space-xs);
+	border: 1px solid var(--gl-color-border);
+	border-radius: var(--gl-radius-sm);
+	background: var(--gl-color-surface);
+}
+
+.gl-search-result__cover {
+	width: var(--gl-thumb-cover-width);
+	aspect-ratio: var(--gl-cover-aspect-ratio);
+	border-radius: var(--gl-radius-sm);
+	overflow: hidden;
+	background: var(--gl-color-surface-muted);
+	flex-shrink: 0;
+}
+
+.gl-search-result__cover img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.gl-search-result__body {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	gap: var(--gl-space-xs);
+	min-width: 0;
+}
+
+.gl-search-result__title {
+	font-size: var(--gl-font-size-lead);
+}
+
+/* DES-23: search-result meta borrows this rule. */
+.gl-search-result__meta {
+	font-family: var(--gl-font-family-mono);
+	font-size: var(--gl-font-size-micro);
+	text-transform: uppercase;
+	letter-spacing: var(--gl-tracking-wide);
+	color: var(--gl-color-text-muted);
+}
+
+.gl-search-result__actions {
+	display: flex;
+	align-items: center;
+	gap: var(--gl-space-xs);
+	flex-wrap: wrap;
+}
+
+.gl-search-empty,
+.gl-search-unavailable {
+	padding: var(--gl-space-md);
+	text-align: center;
+	color: var(--gl-color-text-muted);
+	font-family: var(--gl-font-family-mono);
+	font-size: var(--gl-font-size-meta);
+	text-transform: uppercase;
+	letter-spacing: var(--gl-tracking-wide);
+}
+
+/* Empty state (design §3, §13; §F.4) — eyebrow + italic-serif line inside a
+ * dashed box. `.gl-empty-state` styles the box; the four restructured
+ * templates add the eyebrow/line children, the rest keep a bare text child. */
+.gl-empty-state {
+	padding: var(--gl-space-lg) var(--gl-space-md);
+	text-align: center;
+	border: 1px dashed var(--gl-color-border-strong);
+	border-radius: var(--gl-radius-md);
+	color: var(--gl-color-text-muted);
+}
+
+.gl-empty-state__eyebrow {
+	display: block;
+	margin-block-end: var(--gl-space-xs);
+	font-family: var(--gl-font-family-mono);
+	font-size: var(--gl-font-size-meta);
+	text-transform: uppercase;
+	letter-spacing: var(--gl-tracking-wide);
+	color: var(--gl-color-text-muted);
+}
+
+.gl-empty-state__line {
+	max-width: 34ch;
+	margin-inline: auto;
+	font-size: var(--gl-font-size-heading);
+	font-style: italic;
+}
+
+.gl-empty-state .gl-button {
+	margin-block-start: var(--gl-space-sm);
+}
+
+.gl-spinner {
+	display: inline-block;
+	width: var(--gl-spinner-size);
+	height: var(--gl-spinner-size);
+	border: 1px solid var(--gl-color-border);
+	border-top-color: var(--gl-color-action);
+	border-radius: var(--gl-radius-pill);
+	animation: gl-spin var(--gl-duration-spinner) linear infinite;
+}
+
+@keyframes gl-spin {
+
+	to {
+		transform: rotate( 360deg );
+	}
+}
+
+/* Pagination (design §3). */
+
+.gl-pagination {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	gap: var(--gl-space-sm);
+	margin-block-start: var(--gl-space-lg);
+}
+
+.gl-pagination__link {
+	padding: var(--gl-space-xs) var(--gl-space-md);
+	border: 1px solid var(--gl-color-border-strong);
+	border-radius: var(--gl-radius-sm);
+	color: var(--gl-color-heading);
+	font-family: var(--gl-font-family-mono);
+	font-size: var(--gl-font-size-meta);
+	text-transform: uppercase;
+	letter-spacing: var(--gl-tracking-wide);
+	text-decoration: none;
+}
+
+.gl-pagination__link:hover {
+	background: var(--gl-color-surface-muted);
+}
+
+/* DES-21(b): the disabled Previous/Next span reads as inert. */
+.gl-pagination__link[aria-disabled="true"] {
+	opacity: var(--gl-opacity-disabled);
+	cursor: not-allowed;
+}
+
+.gl-pagination__link[aria-disabled="true"]:hover {
+	background: none;
+}
+
+.gl-pagination__status {
+	font-family: var(--gl-font-family-mono);
+	font-size: var(--gl-font-size-meta);
+	color: var(--gl-color-text-muted);
+}
+
+/* Attribution. */
+
+.gl-attribution {
+	margin-block-start: var(--gl-space-lg);
+	font-family: var(--gl-font-family-mono);
+	font-size: var(--gl-font-size-micro);
+	text-transform: uppercase;
+	letter-spacing: var(--gl-tracking-wide);
+	color: var(--gl-color-text-muted);
+}
+
+.gl-attribution a {
+	color: inherit;
+}
+
+/* Activity feed (design §6). */
+
+.gl-activity-list {
+	display: flex;
+	flex-direction: column;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.gl-activity-row {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--gl-space-sm);
+	padding-block: var(--gl-space-sm);
+	border-bottom: 1px solid var(--gl-color-border);
+}
+
+.gl-activity-row__avatar img {
+	width: var(--gl-avatar-md);
+	height: var(--gl-avatar-md);
+	border-radius: var(--gl-radius-pill);
+	object-fit: cover;
+	display: block;
+}
+
+.gl-activity-row__content {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	gap: var(--gl-space-xs);
+}
+
+.gl-activity-row__sentence {
+	font-size: var(--gl-font-size-body);
+	color: var(--gl-color-text);
+}
+
+.gl-activity-row__sentence a {
+	color: var(--gl-color-action);
+	font-weight: var(--gl-font-weight-medium);
+	text-decoration: none;
+}
+
+.gl-activity-row__sentence a:where(:hover) {
+	text-decoration: underline;
+}
+
+/* The signature gesture — game titles in the feed sentence get serif italic. */
+.gl-activity-row__sentence em {
+	font-family: var(--gl-font-family-display);
+	font-style: italic;
+	color: var(--gl-color-heading);
+}
+
+/* DES-46: flex-wrap for SC 1.4.10 reflow. */
+.gl-activity-row__game {
+	display: flex;
+	align-items: center;
+	gap: var(--gl-space-xs);
+	flex-wrap: wrap;
+}
+
+.gl-activity-row__game-cover {
+	width: var(--gl-thumb-cover-width);
+	aspect-ratio: var(--gl-cover-aspect-ratio);
+	border-radius: var(--gl-radius-sm);
+	overflow: hidden;
+	background: var(--gl-color-surface-muted);
+	flex-shrink: 0;
+}
+
+.gl-activity-row__game-cover img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.gl-activity-row__time {
+	font-family: var(--gl-font-family-mono);
+	font-size: var(--gl-font-size-meta);
+	color: var(--gl-color-text-muted);
+	white-space: nowrap;
+}
+
+/* Member header (design §5). */
+
+.gl-member-header {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: var(--gl-space-md);
+	margin-block-end: var(--gl-space-lg);
+}
+
+.gl-member-header__avatar img {
+	width: var(--gl-avatar-lg);
+	height: var(--gl-avatar-lg);
+	border-radius: var(--gl-radius-pill);
+	box-shadow: 0 0 0 1px var(--gl-color-border);
+	object-fit: cover;
+	display: block;
+}
+
+.gl-member-header__identity {
+	display: flex;
+	flex-direction: column;
+	gap: var(--gl-space-xs);
+}
+
+.gl-member-header h1 {
+	font-size: var(--gl-font-size-display);
+}
+
+.gl-member-header__public-marker {
+	font-family: var(--gl-font-family-mono);
+	font-size: var(--gl-font-size-meta);
+	text-transform: uppercase;
+	letter-spacing: var(--gl-tracking-wide);
+	color: var(--gl-color-success-text);
+}
+
+/* Member directory / invite list (design §7/§8). */
+
+.gl-member-list,
+.gl-invite-list {
+	display: flex;
+	flex-direction: column;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.gl-member-row,
+.gl-invite-row {
+	display: flex;
+
+	/* DES-35: flex-wrap for SC 1.4.10 reflow. */
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--gl-space-sm);
+	padding-block: var(--gl-space-sm);
+	border-bottom: 1px solid var(--gl-color-border);
+}
+
+.gl-member-row__avatar img {
+	width: var(--gl-avatar-md);
+	height: var(--gl-avatar-md);
+	border-radius: var(--gl-radius-pill);
+	object-fit: cover;
+	display: block;
+}
+
+.gl-member-row__identity {
+	display: flex;
+	flex-direction: column;
+	gap: var(--gl-space-xs);
+}
+
+.gl-member-row__name {
+	font-size: var(--gl-font-size-lead);
+}
+
+.gl-member-row__name a {
+	color: inherit;
+	text-decoration: none;
+}
+
+.gl-member-row__name a:where(:hover) {
+	text-decoration: underline;
+}
+
+.gl-member-row__meta {
+	font-family: var(--gl-font-family-mono);
+	font-size: var(--gl-font-size-micro);
+	text-transform: uppercase;
+	letter-spacing: var(--gl-tracking-wide);
+	color: var(--gl-color-text-muted);
+}
+
+.gl-member-row__public-marker {
+	font-family: var(--gl-font-family-mono);
+	font-size: var(--gl-font-size-micro);
+	text-transform: uppercase;
+	color: var(--gl-color-success-text);
+}
+
+.gl-member-row__actions,
+.gl-invite-row__actions {
+	display: flex;
+	align-items: center;
+	gap: var(--gl-space-xs);
+	margin-inline-start: auto;
+}
+
+/* Invite list (design §8) — composed from the member-row shape; only the
+ * genuinely-new invite parts are declared here (DES-4). */
+
+.gl-invite-form {
+	display: flex;
+	align-items: flex-end;
+	flex-wrap: wrap;
+	gap: var(--gl-space-sm);
+	margin-block-end: var(--gl-space-md);
+}
+
+.gl-invite-form .gl-field {
+	flex: 1;
+	min-width: 0;
+	margin-block-end: 0;
+}
+
+.gl-invite-row__body {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	gap: var(--gl-space-xs);
+	min-width: 0;
+}
+
+.gl-invite-row__code {
+	margin: 0;
+	font-family: var(--gl-font-family-mono);
+	font-variant-numeric: tabular-nums;
+	font-weight: var(--gl-font-weight-medium);
+	letter-spacing: var(--gl-tracking-wide);
+	color: var(--gl-color-heading);
+
+	/* DES-45: overflow-wrap: anywhere participates in min-content sizing,
+	 * which is what actually closes the overflow (SC 1.4.10/1.4.4). */
+	overflow-wrap: anywhere;
+}
+
+.gl-invite-row__url {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: var(--gl-space-xs);
+	margin: 0;
+	font-size: var(--gl-font-size-meta);
+	color: var(--gl-color-text-muted);
+}
+
+.gl-invite-row__url a {
+	color: var(--gl-color-action);
+	text-decoration: none;
+
+	/* DES-45: see .gl-invite-row__code. */
+	overflow-wrap: anywhere;
+}
+
+.gl-invite-row__url a:where(:hover) {
+	text-decoration: underline;
+}
+
+.gl-invite-row__copied {
+	font-family: var(--gl-font-family-mono);
+	font-size: var(--gl-font-size-meta);
+	color: var(--gl-color-success-text);
+}
+
+.gl-invite-row__meta {
+	margin: 0;
+	font-family: var(--gl-font-family-mono);
+	font-size: var(--gl-font-size-micro);
+	color: var(--gl-color-text-muted);
+}
+
+/* DES-24: separates the status token from the created/expires dates. */
+.gl-invite-row__status {
+	margin-inline-end: var(--gl-space-xs);
+	font-weight: var(--gl-font-weight-medium);
+	color: var(--gl-color-heading);
+}
+
+/* Game single (/games/{slug}/) — the navy hero (design §11). The header and
+ * cover reuse the card ratio-box pattern at the fixed IGDB cover_big size. */
+
+.gl-game-single__header {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: var(--gl-space-lg);
+	margin-block-end: var(--gl-space-lg);
+}
+
+.gl-game-single__cover {
+	position: relative;
+	flex-shrink: 0;
+
+	/* DES-30: min( token, 100% ) guards SC 1.4.4. */
+	width: min( var(--gl-game-single-cover-width), 100% );
+	aspect-ratio: var(--gl-cover-aspect-ratio);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: var(--gl-radius-lg);
+	overflow: hidden;
+	background: var(--gl-color-heading);
+	box-shadow: var(--gl-shadow-card);
+}
+
+.gl-game-single__cover img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.gl-game-single__cover-placeholder {
+	padding: var(--gl-space-md);
+	text-align: center;
+	color: var(--gl-color-dark-body);
+	font-family: var(--gl-font-family-mono);
+	font-size: var(--gl-font-size-micro);
+	text-transform: uppercase;
+	letter-spacing: var(--gl-tracking-loose);
+}
+
+.gl-game-single__meta {
+	display: flex;
+	flex-direction: column;
+	gap: var(--gl-space-xs);
+
+	/* DES-41/DES-48: a non-zero flex-basis restores a real hypothetical size
+	 * for the wrap decision (SC 1.4.10). */
+	flex: 1 1 var(--gl-game-single-meta-min);
+	min-width: 0;
+}
+
+.gl-game-single__meta h1 {
+	font-size: var(--gl-font-size-hero);
+}
+
+.gl-game-single__release-date {
+	margin: 0;
+	font-family: var(--gl-font-family-mono);
+	font-size: var(--gl-font-size-meta);
+	text-transform: uppercase;
+	letter-spacing: var(--gl-tracking-wide);
+	color: var(--gl-color-text-muted);
+}
+
+.gl-game-single__label {
+	margin: var(--gl-space-xs) 0 0;
+	font-family: var(--gl-font-family-mono);
+	font-size: var(--gl-font-size-micro);
+	font-weight: var(--gl-font-weight-medium);
+	text-transform: uppercase;
+	letter-spacing: var(--gl-tracking-wide);
+	color: var(--gl-color-text-muted);
+}
+
+.gl-game-single__genres,
+.gl-game-single__platforms {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--gl-space-xs);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.gl-game-single__genres li,
+.gl-game-single__platforms li {
+	padding: var(--gl-space-xs) var(--gl-space-sm);
+	border: 1px solid var(--gl-color-border-strong);
+	border-radius: var(--gl-radius-sm);
+	font-family: var(--gl-font-family-mono);
+	font-size: var(--gl-font-size-micro);
+	text-transform: uppercase;
+	letter-spacing: var(--gl-tracking-wide);
+	color: var(--gl-color-text);
+}
+
+/* Dark-surface overrides — the game-single hero renders its meta inside the
+ * navy `.gl-header-band`, so its release date, labels, and pills switch to the
+ * dark-surface text/hairline tokens (design §11). Placed after the
+ * light-ground rules above (ascending specificity: 0,2,x). */
+.gl-header-band .gl-game-single__release-date,
+.gl-header-band .gl-game-single__label {
+	color: var(--gl-color-dark-subheading);
+}
+
+.gl-header-band .gl-game-single__genres li,
+.gl-header-band .gl-game-single__platforms li {
+	border-color: var(--gl-color-dark-hairline-strong);
+	color: var(--gl-color-dark-subheading);
+}
+
+.gl-header-band .gl-game-single__cover {
+	box-shadow: none;
+}
+
+.gl-game-single__summary {
+	max-width: 62ch;
+	margin-block-end: var(--gl-space-lg);
+	font-size: var(--gl-font-size-lead);
+	line-height: var(--gl-line-height-relaxed);
+	color: var(--gl-color-text);
+}
+
+.gl-game-single__status-counts {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--gl-space-md);
+	margin: 0 0 var(--gl-space-lg);
+	padding-block: var(--gl-space-sm);
+	border-block: 1px solid var(--gl-color-border);
+	list-style: none;
+	font-family: var(--gl-font-family-mono);
+	font-size: var(--gl-font-size-meta);
+	text-transform: uppercase;
+	letter-spacing: var(--gl-tracking-wide);
+}
+
+.gl-game-single__holders {
+	display: flex;
+	flex-direction: column;
+	margin: 0 0 var(--gl-space-lg);
+	padding: 0;
+	list-style: none;
+}
+
+.gl-game-single__holder {
+	display: flex;
+
+	/* DES-35: flex-wrap for SC 1.4.10 reflow. */
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--gl-space-sm);
+	padding-block: var(--gl-space-sm);
+	border-bottom: 1px solid var(--gl-color-border);
+}
+
+.gl-game-single__holder-avatar img {
+	width: var(--gl-avatar-sm);
+	height: var(--gl-avatar-sm);
+	border-radius: var(--gl-radius-pill);
+	object-fit: cover;
+	display: block;
+}
+
+.gl-game-single__holder a:not( .gl-game-single__holder-avatar ) {
+	color: var(--gl-color-heading);
+	font-weight: var(--gl-font-weight-medium);
+	text-decoration: none;
+}
+
+.gl-game-single__holder a:where(:hover):not( .gl-game-single__holder-avatar ) {
+	text-decoration: underline;
+}
+
+/* Quick-look detail (design §3, §13; reworked §C) — the per-card inline
+ * disclosure that replaced the shared modal <dialog>. `.gl-game-card__detail`
+ * is server-rendered `[hidden]` inside every card (game-card.php);
+ * game-detail.js un-hides it on cover click and fills the `[data-gl-detail-*]`
+ * hooks from `GET /games/{igdb_id}`. `:not([hidden])` scopes the flex display
+ * so the browser's own `[hidden] { display: none }` UA rule keeps winning while
+ * the region is collapsed — the same idiom as `.gl-game-card__status` above. */
+
+.gl-game-card__detail:not( [hidden] ) {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: var(--gl-space-xs);
+	padding: var(--gl-space-sm);
+	border-top: 1px solid var(--gl-color-border);
+}
+
+/* Sideways-float restyle: the child rows (year/genres/platforms/summary/
+ * status/fullpage — everything the region renders) are wrapped in this inner
+ * element (game-card.php) so the WIDE floating panel below can fade its
+ * content in as its own stage, independently of the outer box's width, which
+ * animates separately. At narrow widths this is the only place the former
+ * outer flex/gap now lives — visually identical to before the wrap, since
+ * the outer above still supplies the padding around it. */
+.gl-game-card__detail-inner {
+	display: flex;
+	flex-direction: column;
+	gap: var(--gl-space-xs);
+	min-width: 0;
+}
+
+.gl-game-card__detail-close {
+	position: absolute;
+	top: var(--gl-space-xs);
+	right: var(--gl-space-xs);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: var(--gl-cycle-btn-size);
+	height: var(--gl-cycle-btn-size);
+	padding: 0;
+	border: 0;
+	border-radius: var(--gl-radius-pill);
+	background: transparent;
+	color: var(--gl-color-text-muted);
+	cursor: pointer;
+}
+
+.gl-game-card__detail-close svg {
+	width: var(--gl-icon-size-sm);
+	height: var(--gl-icon-size-sm);
+}
+
+.gl-game-card__detail-close:hover {
+	background: var(--gl-color-surface-muted);
+	color: var(--gl-color-heading);
+}
+
+/* The panel's own title (game-card.php repeats the game name as a header so
+ * the floated-out panel reads as a self-contained detail card). Serif display
+ * face at heading size; padded clear of the close button in the top-right. */
+.gl-game-card__detail-title {
+	margin: 0;
+	padding-inline-end: var(--gl-cycle-btn-size);
+	font-family: var(--gl-font-family-display);
+	font-size: var(--gl-font-size-heading);
+	line-height: var(--gl-line-height-tight);
+	color: var(--gl-color-heading);
+}
+
+/* Relocated release year (AC-005(e), §B row 9) — the mono meta eyebrow. Kept
+ * clear of the close button that overlaps the region's top-right corner. */
+.gl-game-card__detail-meta {
+	margin: 0;
+	padding-inline-end: var(--gl-cycle-btn-size);
+	font-family: var(--gl-font-family-mono);
+	font-size: var(--gl-font-size-meta);
+	text-transform: uppercase;
+	letter-spacing: var(--gl-tracking-wide);
+	color: var(--gl-color-text-muted);
+}
+
+/* Genres / platforms — bordered boxes, matching the /games/{slug}/ pills
+ * (design ask, reverted from the earlier inline middot list). Each row is a
+ * small mono LABEL above a wrapping set of bordered chips. game-detail.js
+ * hides the whole row when its list is empty. */
+.gl-game-card__detail-row {
+	display: flex;
+	flex-direction: column;
+	gap: var(--gl-space-xs);
+	margin: 0;
+	font-size: var(--gl-font-size-micro);
+	line-height: var(--gl-line-height-snug);
+}
+
+.gl-game-card__detail-label {
+	font-family: var(--gl-font-family-mono);
+	font-weight: var(--gl-font-weight-medium);
+	text-transform: uppercase;
+	letter-spacing: var(--gl-tracking-wide);
+	color: var(--gl-color-text-muted);
+}
+
+.gl-game-card__detail-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--gl-space-xs);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	font-family: var(--gl-font-family-mono);
+	color: var(--gl-color-text);
+}
+
+/* The chip `li` selector is qualified with the region class so its specificity
+ * (0,2,1) matches the earlier `.gl-header-band …__genres li` rule instead of
+ * descending below it (no-descending-specificity). Mirrors the bordered-box
+ * look of `.gl-game-single__genres li`. */
+.gl-game-card__detail .gl-game-card__detail-list li {
+	margin: 0;
+	padding: var(--gl-space-xs) var(--gl-space-sm);
+	border: 1px solid var(--gl-color-border-strong);
+	border-radius: var(--gl-radius-sm);
+	font-size: var(--gl-font-size-micro);
+	text-transform: uppercase;
+	letter-spacing: var(--gl-tracking-wide);
+	color: var(--gl-color-text);
+}
+
+/* Summary — clamped to a few lines so a long IGDB blurb never balloons the
+ * card; the always-present "View full page" link below reaches the rest. */
+.gl-game-card__detail-summary {
+	display: -webkit-box;
+	margin: var(--gl-space-xs) 0 0;
+	overflow: hidden;
+	font-size: var(--gl-font-size-meta);
+	line-height: var(--gl-line-height-relaxed);
+	color: var(--gl-color-text);
+	-webkit-line-clamp: 5;
+	-webkit-box-orient: vertical;
+}
+
+.gl-game-card__detail-status {
+	font-family: var(--gl-font-family-mono);
+	font-size: var(--gl-font-size-meta);
+	color: var(--gl-color-text-muted);
+}
+
+.gl-game-card__detail-status .gl-error-text {
+	color: var(--gl-color-error-text);
+}
+
+.gl-game-card__detail-fullpage {
+	margin-block-start: var(--gl-space-xs);
+	font-family: var(--gl-font-family-mono);
+	font-size: var(--gl-font-size-meta);
+	color: var(--gl-color-action);
+}
+
+/* Sideways-float restyle — wide screens only (em, deliberately, never px, so
+ * AC-049(l)'s length scan never trips on this media query; a card grid this
+ * narrow already reflows to at least 4 columns per --gl-grid-card-min/
+ * --gl-grid-gap inside the --gl-container-wide cap, so "wide" here reliably
+ * means several sibling cards for the floating panel to cover, not
+ * a cramped 1-2 column layout). Below this breakpoint the mobile-first rules
+ * above (downward, in-place) are untouched. game-detail.js's
+ * WIDE_BREAKPOINT_QUERY constant must be kept at the same value by hand. */
+@media ( min-width: 64em ) {
+
+	.gl-game-card.is-expanded {
+
+		/* The base card clips its own rounded corners with overflow: hidden;
+		 * the floating panel is a child of this <li>, so it must be allowed to
+		 * render outside that box. overflow: visible here would leave the
+		 * cover's top corners square as the card lifts, so the cover carries
+		 * its own top border-radius (see .gl-game-card__cover) to stay rounded
+		 * independently of this. */
+		overflow: visible;
+		z-index: var(--gl-z-quicklook-panel);
+	}
+
+	.gl-game-card__detail:not( [hidden] ) {
+
+		/* The <li> stays in its normal grid cell at its own natural (collapsed)
+		 * height and width — only this sibling escapes it. top/bottom (not
+		 * height: 100%) is what lets the panel track that natural height
+		 * without JS measuring anything: percentage heights do not resolve
+		 * against an auto-height positioned ancestor, but top+bottom offsets
+		 * do, because the ancestor's own in-flow content (the cover/title/
+		 * actions, none of which move) has already given it a definite
+		 * rendered height by the time this is laid out. */
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		display: flex;
+		flex-direction: column;
+
+		/* game-detail.js writes --gl-quicklook-computed-width per expand,
+		 * clamped to whatever space is actually free on the chosen side (never
+		 * more than --gl-quicklook-width) so a card in the middle of a
+		 * many-column row can never push the panel past either edge. The
+		 * min(…, 92vw) fallback only matters if that computation is ever
+		 * skipped — it is what actually guarantees no horizontal page scroll
+		 * on its own. */
+		width: var(--gl-quicklook-computed-width, min( var(--gl-quicklook-width), 92vw ));
+		padding: var(--gl-space-md);
+		border: 1px solid var(--gl-color-border-strong);
+		border-radius: var(--gl-radius-lg);
+		background: var(--gl-color-surface);
+		box-shadow: var(--gl-shadow-hover);
+
+		/* Requirement: "the same card, just wider" — content should rarely
+		 * need to scroll given the width, but this is the safety valve rather
+		 * than clipping. */
+		overflow-y: auto;
+	}
+
+	/* Direction, set by game-detail.js as a modifier class on the card after
+	 * measuring its rect against the grid's own right/left edge (and the
+	 * viewport) — right is the default; left is the flip used near the
+	 * rightmost column so the panel always stays on-screen. A small gap (the
+	 * shared spacing token, not a new literal) keeps the floating panel from
+	 * reading as flush-attached to the still-static cover/title column. */
+	.gl-game-card.is-expanded--right .gl-game-card__detail {
+		left: calc( 100% + var(--gl-space-sm) );
+	}
+
+	.gl-game-card.is-expanded--left .gl-game-card__detail {
+		left: auto;
+		right: calc( 100% + var(--gl-space-sm) );
+	}
+
+	/* The narrow layout clamps the summary to 5 lines to keep the downward
+	 * card from growing too tall; the wide panel has its own overflow-y:auto
+	 * safety valve instead (requirement 6), so the clamp is lifted here. */
+	.gl-game-card__detail-summary {
+		-webkit-line-clamp: unset;
+	}
+}
+
+@media ( min-width: 64em ) and ( prefers-reduced-motion: no-preference ) {
+
+	/* Stage (b): widen. Declared on the persistent :not([hidden]) selector
+	 * (not on .is-open) so the SAME transition plays in reverse when
+	 * .is-open is removed on collapse — a class toggle that flips which of
+	 * two rules with equal specificity wins is enough to trigger a
+	 * transition either direction, as long as the `transition` declaration
+	 * itself is not also being added/removed in the same step. The delay
+	 * offsets this stage to start roughly when the float/lift (the existing
+	 * --gl-duration-transition on .gl-game-card, unconditional, stage a)
+	 * finishes, so the stages read in sequence rather than all at once. */
+	.gl-game-card__detail:not( [hidden] ) {
+		transition: width var(--gl-duration-widen) ease var(--gl-delay-widen);
+	}
+
+	/* The pre-open transient state a newly-revealed (was [hidden]) region
+	 * renders in for the one frame before game-detail.js adds .is-open —
+	 * without an explicit "before" value distinct from the resting width
+	 * above, there is nothing for the transition to interpolate from, since
+	 * an element switching from display: none in the very same tick has no
+	 * prior rendered box to animate out of. overflow: hidden here (only;
+	 * the resting rule above keeps overflow-y: auto once open) keeps the
+	 * still-narrow box from visibly spilling its own content during the
+	 * grow. */
+	.gl-game-card__detail:not( [hidden] ):not( .is-open ) {
+		width: 0;
+		overflow: hidden;
+		pointer-events: none;
+	}
+
+	/* Stage (c): fade. A separate element from the box above (the box's own
+	 * width is what visibly "opens"; fading the WHOLE box, border and all,
+	 * would make the widening invisible until this stage's later delay) —
+	 * see .gl-game-card__detail-inner above. */
+	.gl-game-card__detail-inner {
+		transition: opacity var(--gl-duration-fade) ease var(--gl-delay-fade);
+	}
+
+	.gl-game-card__detail:not( .is-open ) .gl-game-card__detail-inner {
+		opacity: 0;
+	}
+}
+
+/* Motion — hover/press transitions only for visitors who allow motion; the
+ * spinner already stops for reduced motion below. */
+
+@media ( prefers-reduced-motion: no-preference ) {
+
+	.gl-game-card,
+	.gl-member-row,
+	.gl-invite-row,
+	.gl-search-result {
+		transition: border-color var(--gl-duration-transition) ease, box-shadow var(--gl-duration-transition) ease, transform var(--gl-duration-transition) ease;
+	}
+
+	.gl-button,
+	.gl-status-filters a,
+	.gl-toggle__track,
+	.gl-toggle__thumb,
+	.gl-site-header__link,
+	.gl-site-header__menu-toggle,
+	.gl-site-header__menu-link,
+	.gl-site-footer__nav-link {
+		transition: background var(--gl-duration-transition) ease, color var(--gl-duration-transition) ease, border-color var(--gl-duration-transition) ease, transform var(--gl-duration-transition) ease;
+	}
+}
+
+@media ( prefers-reduced-motion: reduce ) {
+
+	.gl-spinner {
+		animation: none;
+	}
+}
+
+/* =========================================================================
+   Site chrome — the plugin-rendered nav header + footer bookend (header/
+   footer redesign task). `.gl-site-header`/`.gl-site-footer` are the page's
+   own `<header>`/`<footer>` landmarks: `site-header.php`/`site-footer.php`
+   open the HTML document themselves and no longer render the active theme's
+   header/footer chrome, so the plugin owns the single banner/contentinfo per
+   page (DD-008 still holds — opening the document manually is theme-agnostic,
+   and dropping the theme's own header also removes the core Navigation/
+   Page-List block markup that tripped axe-core's `list` rule). Both share
+   `.gl-header-band`'s navy surface token but are a distinct, persistent
+   component (every route, not one page's hero) with their own dark-surface
+   link/hairline tokens (tokens.css). The primary <nav> and the footer's own
+   <nav> each carry a brand-qualified aria-label.
+   ========================================================================= */
+
+.gl-site-header,
+.gl-site-footer {
+	background: var(--gl-color-heading);
+}
+
+.gl-site-header {
+	border-bottom: 1px solid var(--gl-color-dark-hairline-soft);
+}
+
+.gl-site-header__row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--gl-space-lg);
+	padding-block: var(--gl-space-md);
+}
+
+.gl-site-header__brand {
+	display: flex;
+	align-items: center;
+	gap: var(--gl-space-sm);
+	margin-inline-end: auto;
+	text-decoration: none;
+}
+
+/* The brand mark square + display-font wordmark are shared between the
+   header's own link and the footer's plain (non-link) brand group; the
+   footer variants below override just the two size properties that differ,
+   at equal selector specificity but later source order. */
+.gl-site-header__mark,
+.gl-site-footer__mark {
+	display: flex;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	width: var(--gl-icon-btn-size);
+	height: var(--gl-icon-btn-size);
+	background: var(--gl-color-action);
+	color: var(--gl-color-action-on);
+	font-family: var(--gl-font-family-display);
+	font-size: var(--gl-font-size-title);
+	line-height: var(--gl-line-height-tight);
+}
+
+.gl-site-header__wordmark,
+.gl-site-footer__wordmark {
+	font-family: var(--gl-font-family-display);
+	font-size: var(--gl-font-size-display);
+	line-height: var(--gl-line-height-tight);
+	color: var(--gl-color-dark-heading);
+}
+
+.gl-site-header__nav {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--gl-space-md);
+}
+
+.gl-site-header__link {
+	font-size: var(--gl-font-size-body);
+	color: var(--gl-color-dark-link);
+	text-decoration: none;
+	padding-block-end: var(--gl-space-xs);
+	border-bottom: 1px solid transparent;
+}
+
+.gl-site-header__link:hover {
+	color: var(--gl-color-dark-heading);
+}
+
+/* The active primary destination: full-white text plus the lightened
+   cranberry underline (`-dark-accent`, already contrast-verified on navy
+   above `.gl-header-band__eyebrow`'s own use of it) — raw action cranberry
+   is never painted directly on this navy ground (DES-101's own lesson). */
+.gl-site-header__link[aria-current="page"] {
+	color: var(--gl-color-dark-heading);
+	border-bottom-color: var(--gl-color-dark-accent);
+}
+
+.gl-site-header__menu-toggle {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--gl-space-sm);
+	background: none;
+	border: 1px solid var(--gl-color-dark-hairline-strong);
+	border-radius: var(--gl-radius-md);
+	padding: var(--gl-space-xs) var(--gl-space-sm);
+	font-family: var(--gl-font-family-body);
+	font-size: var(--gl-font-size-meta);
+	color: var(--gl-color-dark-subheading);
+	cursor: pointer;
+}
+
+.gl-site-header__menu-toggle:hover {
+	color: var(--gl-color-dark-heading);
+	border-color: var(--gl-color-dark-subheading);
+}
+
+.gl-site-header__menu-icon {
+	display: inline-flex;
+	flex: none;
+	flex-direction: column;
+	justify-content: center;
+	gap: var(--gl-space-xs);
+	width: var(--gl-icon-size-sm);
+}
+
+.gl-site-header__menu-icon span {
+	height: 1px;
+	background: currentcolor;
+}
+
+/* The secondary/account disclosure (My library, Invites, Join/Log in, Log
+   out) `site-header.js` opens on the Menu toggle — server-rendered [hidden]
+   so it works identically to every other disclosure in this file before JS
+   runs; the [hidden] rule is redundant with the UA default, kept explicit to
+   match `.gl-game-card__detail`'s own idiom in this file. */
+.gl-site-header__menu {
+	border-top: 1px solid var(--gl-color-dark-hairline-soft);
+}
+
+.gl-site-header__menu[hidden] {
+	display: none;
+}
+
+.gl-site-header__menu-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--gl-space-md);
+	margin: 0;
+	padding-block: var(--gl-space-sm);
+	list-style: none;
+}
+
+.gl-site-header__menu-link {
+	font-size: var(--gl-font-size-body);
+	color: var(--gl-color-dark-link);
+	text-decoration: none;
+}
+
+.gl-site-header__menu-link:hover {
+	color: var(--gl-color-dark-heading);
+}
+
+/* Optional login-credential hint beneath the account menu (demo/sandbox
+   environments only — see site-header.php's `game_library_login_hint`
+   filter). Shares the navy menu surface, so it reads the dark-surface
+   token ramp: hairline-bordered value chips set in the mono face. */
+
+.gl-site-header__login-hint {
+	padding-block: var(--gl-space-sm);
+	border-top: 1px solid var(--gl-color-dark-hairline-soft);
+}
+
+/* Each advertised sign-in (member, admin, …) is its own block; stack them
+   with a small gap so the two credential sets read as distinct. */
+.gl-site-header__login-hint-account + .gl-site-header__login-hint-account {
+	margin-top: var(--gl-space-sm);
+}
+
+.gl-site-header__login-hint-title {
+	margin: 0 0 var(--gl-space-xs);
+	font-size: var(--gl-font-size-micro);
+	font-weight: var(--gl-font-weight-strong);
+	text-transform: uppercase;
+	letter-spacing: var(--gl-tracking-wide);
+	color: var(--gl-color-dark-subheading);
+}
+
+.gl-site-header__login-hint-creds {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--gl-space-xs) var(--gl-space-md);
+	margin: 0;
+}
+
+.gl-site-header__login-hint-cred {
+	display: flex;
+	align-items: baseline;
+	gap: var(--gl-space-xs);
+}
+
+.gl-site-header__login-hint-cred dt {
+	font-size: var(--gl-font-size-micro);
+	text-transform: uppercase;
+	letter-spacing: var(--gl-tracking-wide);
+	color: var(--gl-color-dark-link);
+}
+
+.gl-site-header__login-hint-cred dd {
+	margin: 0;
+}
+
+.gl-site-header__login-hint-cred code {
+	padding: var(--gl-space-xs) var(--gl-space-sm);
+	border: 1px solid var(--gl-color-dark-hairline-strong);
+	border-radius: var(--gl-radius-sm);
+	font-family: var(--gl-font-family-mono);
+	font-size: var(--gl-font-size-meta);
+	color: var(--gl-color-dark-heading);
+}
+
+.gl-site-header__login-hint-note {
+	margin: var(--gl-space-xs) 0 0;
+	font-size: var(--gl-font-size-micro);
+	color: var(--gl-color-dark-link);
+}
+
+/* Footer bookend — same navy ground and brand mark as the header, a plain
+   link list rather than a repeated Menu disclosure (the footer has nothing
+   account-scoped to hide behind one). */
+
+.gl-site-footer {
+	border-top: 1px solid var(--gl-color-dark-hairline-soft);
+	margin-block-start: var(--gl-space-lg);
+}
+
+.gl-site-footer__row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--gl-space-md);
+	padding-block: var(--gl-space-lg);
+}
+
+.gl-site-footer__brand {
+	display: flex;
+	align-items: center;
+	gap: var(--gl-space-sm);
+}
+
+.gl-site-footer__mark {
+	font-size: var(--gl-font-size-body);
+}
+
+.gl-site-footer__wordmark {
+	font-size: var(--gl-font-size-heading);
+}
+
+.gl-site-footer__nav {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--gl-space-md);
+}
+
+.gl-site-footer__nav-link {
+	font-size: var(--gl-font-size-meta);
+	color: var(--gl-color-dark-link);
+	text-decoration: none;
+}
+
+.gl-site-footer__nav-link:hover {
+	color: var(--gl-color-dark-heading);
+}
+
+.gl-site-footer__meta {
+	margin: 0;
+	font-family: var(--gl-font-family-mono);
+	font-size: var(--gl-font-size-meta);
+	color: var(--gl-color-dark-body);
+}
