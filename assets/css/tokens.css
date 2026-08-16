@@ -1,0 +1,314 @@
+/**
+ * Game Library design tokens (DD-003/ADR-003).
+ *
+ * PF-1 (cycle-5): the design rationale below is inline and load-bearing by
+ * deliberate human ruling, not accidental bloat — this file, not a
+ * separate doc, is its authoritative home. See DD-007/the Boundaries
+ * section before proposing to relocate, trim, or duplicate it elsewhere.
+ *
+ * Every `--gl-*` custom property below terminates in a literal value. Where
+ * a WordPress core preset or global-styles variable is a genuine RENDERED
+ * value (never a colour PALETTE entry — see DES-25/DES-26/DES-27, cycle-3,
+ * below) — the named font-size steps, or the content/wide layout widths a
+ * theme.json `layout` setting exposes — that variable forms the first link
+ * of the fallback chain, e.g. `--gl-font-size-body: var(--wp--preset--
+ * font-size--medium, 1rem);`, so a theme that defines the preset is honoured
+ * automatically and the literal after the comma is the value used when no
+ * theme (or no matching preset) is active. This plugin ships with no
+ * theme.json and requires none. Every colour token (status, action, surface,
+ * text, feedback) is a plain, self-contained literal (or derived from one
+ * via `color-mix()`) for the same reason: a theme.json colour PALETTE entry
+ * is an editor-facing swatch an author can pick for a block, not a
+ * guarantee that swatch contrasts with anything else in the palette, or
+ * even that it is what the theme actually paints the page with — DES-25/
+ * DES-26/DES-27 (cycle-3) removed the three colour tokens that used to
+ * chain to one, after each was found to break its own contrast contract
+ * under a real theme. Radius, spacing, avatar sizes, focus-ring
+ * width/offset, and media values likewise have no plausible core
+ * equivalent and are plain literals.
+ *
+ * `game-library.css` (enqueued after this file, with this file as its
+ * dependency — see `includes/class-assets.php`) consumes every value here
+ * and declares no colour, radius, spacing, type size, avatar size, container
+ * width, focus-ring value, or media value of its own (AC-049).
+ *
+ * @package Game_Library
+ */
+
+:root {
+
+	/* Status colours — each pair (background + "-on" foreground) sits at or
+	 * above 4.5:1 contrast (WCAG 2.1 AA for normal text). Status is always
+	 * paired with visible text (AC-015); these colours are a secondary,
+	 * non-load-bearing cue, deliberately independent of the theme-derived
+	 * action colour below (DES-10) — a status colour must stay legible
+	 * against its own fixed "-on" pair regardless of what a theme's primary
+	 * colour happens to be, so unlike --gl-color-action it does not chain to
+	 * a `--wp--preset--color--*` fallback. --gl-color-status-playing is a
+	 * distinct literal from --gl-color-action's own #1d4ed8 default on
+	 * purpose — the two match by default coincidence, not by
+	 * cross-reference; changing one must not silently change the other. */
+	--gl-color-status-playing: #1e40af;
+	--gl-color-status-playing-on: #fff;
+	--gl-color-status-finished: #166534;
+	--gl-color-status-finished-on: #fff;
+	--gl-color-status-backlog: #92400e;
+	--gl-color-status-backlog-on: #fff;
+	--gl-color-status-wishlist: #6d28d9;
+	--gl-color-status-wishlist-on: #fff;
+
+	/* Action colours — primary interactive controls (buttons, and links
+	 * styled as buttons). Self-contained, fixed pair (DES-25, cycle-3),
+	 * same reasoning as the status colours above: a theme's "primary"
+	 * palette swatch is an editor-facing colour choice, not a guarantee
+	 * that swatch contrasts with anything — chaining --gl-color-action to
+	 * `--wp--preset--color--primary` let an unrelated theme swatch (e.g.
+	 * Twenty Twenty-Three's lime #9dff20) become the button/focus-ring
+	 * colour with no contrast relationship to its own "-on" pair at all
+	 * (measured: white text on that lime, 1.25:1, far below the 4.5:1
+	 * floor). --gl-color-action-hover is a distinct, deliberately darker
+	 * literal, not derived from --gl-color-action, so hover reads as a
+	 * darkening rather than a hue change. */
+	--gl-color-action: #1d4ed8;
+	--gl-color-action-hover: #1e3a8a;
+	--gl-color-action-on: #fff;
+
+	/* Surface & text colours (DES-27, cycle-3: no longer chained to a
+	 * `--wp--preset--color--*` fallback). A theme.json colour PALETTE entry
+	 * is an editor-facing swatch choice, not a statement about what the
+	 * page is actually painted with — a block theme paints from its own
+	 * `styles.color.background`/`.text`, which may reference an entirely
+	 * different slug than `background`/`foreground` (or none at all).
+	 * Chaining here made every token derived below (via color-mix()) only
+	 * as correct as that assumption: a theme that happens to declare a
+	 * `background` palette entry it does not actually paint with silently
+	 * mixed every derived token against the wrong end (measured: 2.08:1 on
+	 * .gl-empty-state's muted text under exactly that mismatch). The plugin
+	 * owns this pair outright instead, matching DES-25's action-colour
+	 * fix and the status colours' own precedent above.
+	 *
+	 * --gl-color-surface-muted, --gl-color-border, --gl-color-border-interactive,
+	 * and --gl-color-text-muted stay derived from this pair via color-mix()
+	 * (DES-6, extended by DES-16/DES-17 cycle-2) — now a stable derivation
+	 * against two literals instead of two moving targets, so every ratio
+	 * below is fixed and verifiable rather than theme-dependent.
+	 * --gl-color-border stays a faint decorative hairline (20% mix);
+	 * --gl-color-border-interactive is the stronger boundary every form
+	 * control, secondary button, and pagination link uses instead, since a
+	 * decorative-hairline strength border fails SC 1.4.11 on an interactive
+	 * control's own edge. */
+	--gl-color-surface: #fff;
+	--gl-color-surface-muted: color-mix( in oklab, var(--gl-color-surface) 94%, var(--gl-color-text) );
+	--gl-color-border: color-mix( in oklab, var(--gl-color-text) 20%, var(--gl-color-surface) );
+	--gl-color-border-interactive: color-mix( in oklab, var(--gl-color-text) 55%, var(--gl-color-surface) );
+	--gl-color-text: #111827;
+	--gl-color-text-muted: color-mix( in oklab, var(--gl-color-text) 72%, var(--gl-color-surface) );
+
+	/* Feedback colours — form and request-outcome messaging. The -on pair is
+	 * for the background+foreground case (.gl-notice--*,
+	 * .gl-button--danger:hover) — at or above 4.5:1 contrast against the raw
+	 * --gl-color-error/-success value, now that both are fixed literals
+	 * against a fixed --gl-color-surface (DES-27, above) rather than a
+	 * theme-derived one. The `-text` pair (DES-26, cycle-3) is for the
+	 * bare-text consumers (.gl-error-text, .gl-member-row__public-marker,
+	 * .gl-invite-row__copied) — mixed 30% toward --gl-color-text rather than
+	 * used raw, matching --gl-color-text-muted's own derivation shape, so
+	 * the feedback hue survives while sitting slightly closer to the body
+	 * text colour than the saturated raw value used as a background. */
+	--gl-color-error: #b91c1c;
+	--gl-color-error-on: #fff;
+	--gl-color-error-text: color-mix( in oklab, var(--gl-color-error) 70%, var(--gl-color-text) );
+	--gl-color-success: #15803d;
+	--gl-color-success-on: #fff;
+	--gl-color-success-text: color-mix( in oklab, var(--gl-color-success) 70%, var(--gl-color-text) );
+
+	/* Radius — px, not rem: borders/hairlines/radius are the one category
+	 * references/tokens.md keeps in px regardless of root font-size. */
+	--gl-radius-sm: 4px;
+	--gl-radius-md: 8px;
+	--gl-radius-pill: 999px;
+
+	/* Spacing — rem, so the scale grows with a user's preferred root
+	 * font-size (WCAG 1.4.4) instead of freezing at a fixed pixel step
+	 * while type around it grows (DES-9). 1rem = 16px at the default root
+	 * size, so these match the previous px values exactly at 100%.
+	 * DES-38 (cycle-5): four steps, not five — --gl-space-xl had zero
+	 * consumers anywhere in game-library.css (confirmed by grep); AC-049(f)
+	 * is satisfied by these four. */
+	--gl-space-xs: 0.25rem;
+	--gl-space-sm: 0.5rem;
+	--gl-space-md: 1rem;
+	--gl-space-lg: 1.5rem;
+
+	/* Type scale. DES-38 (cycle-5): three sizes, not four —
+	 * --gl-font-size-heading resolved correctly but had zero consumers
+	 * anywhere in game-library.css (confirmed by grep); AC-049(g) is
+	 * satisfied by these three. */
+	--gl-font-size-meta: var(--wp--preset--font-size--small, 0.75rem);
+	--gl-font-size-body: var(--wp--preset--font-size--medium, 1rem);
+	--gl-font-size-title: var(--wp--preset--font-size--large, 1.125rem);
+	--gl-font-weight-strong: 600;
+	--gl-tracking-wide: 0.05em;
+	/* DES-37 (cycle-5) — same "no raw literal" gap DES-33 closed for
+	 * duration/opacity below, just not caught until now: the file header's
+	 * "the only literals in this file are 0 and the 1px border widths"
+	 * claim was not literally true before these two tokens existed either
+	 * — a hardcoded font stack and a bare unitless line-height are neither
+	 * a length nor a colour, so AC-049(l)'s regex (px/rem lengths,
+	 * hex/rgb()/hsl() colours only) cannot see either one. */
+	--gl-font-family-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	--gl-line-height-tight: 1;
+
+	/* Transition/animation duration (DES-33) — the spinner's own rotation
+	 * speed; the file header's "no raw length" claim was not literally
+	 * true before these four tokens existed (0.05em, 1s, and 0.6 were raw
+	 * literals AC-049's own px/rem-only regex could not see). */
+	--gl-duration-spinner: 1s;
+
+	/* Opacity (DES-33) — one concept ("disabled"), previously the same
+	 * literal repeated in two rules that had to stay in step by hand. */
+	--gl-opacity-disabled: 0.6;
+
+	/* Avatar sizes — px, not rem (the one deliberate exception to the
+	 * spacing rule above, DES-9): `get_avatar()` emits pixel `width`/
+	 * `height` HTML attributes for the requested size, so the CSS box that
+	 * sizes the resulting <img> must match in the same absolute unit or the
+	 * two silently disagree once the root font-size changes.
+	 *
+	 * Consumers, so a future resize touches exactly the right boxes
+	 * (DES-36/DES-39, cycle-5): --gl-avatar-lg sizes
+	 * .gl-member-header__avatar (a member's own profile avatar);
+	 * --gl-avatar-md sizes .gl-member-row__avatar/.gl-activity-row__avatar
+	 * (an actor's profile avatar); --gl-avatar-sm sizes
+	 * .gl-game-single__holder-avatar (a holder's profile avatar). No
+	 * game-cover thumbnail or the spinner reads any of these three — see
+	 * --gl-thumb-cover-width/--gl-spinner-size below, DES-39's own fix for
+	 * exactly the hazard of a coincidentally-equal value being read by
+	 * something it does not actually describe. */
+	--gl-avatar-sm: 24px;
+	--gl-avatar-md: 40px;
+	--gl-avatar-lg: 64px;
+
+	/* Game-cover thumbnail width and the loading-spinner's diameter
+	 * (DES-39, cycle-5) — split out of --gl-avatar-lg/--gl-avatar-sm, which
+	 * .gl-activity-row__game-cover/.gl-search-result__cover (both game
+	 * covers, not avatars) and .gl-spinner (a loading indicator, not an
+	 * avatar) used to read purely because their sizes happened to
+	 * coincide with the two avatar steps. tokens.css is careful about
+	 * exactly this hazard elsewhere (the status-colour comment above
+	 * insists two coincidentally-equal values stay distinct) — DES-36's own
+	 * fix (aligning avatar markup to the avatar tokens) is the concrete
+	 * trigger: resizing an avatar step would otherwise have silently
+	 * resized a cover thumbnail and the spinner too. Initialised to the
+	 * same 64px/24px so nothing renders differently today. */
+	--gl-thumb-cover-width: 64px;
+	--gl-spinner-size: 24px;
+
+	/* .gl-visually-hidden's clip-to-1px-box offset (DES-47, cycle-7,
+	 * closes the long-standing DES-13 gap) — the standard
+	 * visually-hidden-but-not-display:none pattern shrinks an element to a
+	 * 1px box and pulls it back with an equal negative margin so it never
+	 * affects layout. AC-049(l)'s own design-token test scans
+	 * game-library.css's raw text for px/rem literals (0px/1px exempted as
+	 * border widths, not a negative margin), so the negative margin is
+	 * expressed as calc(-1 * this token) rather than a literal -1px. */
+	--gl-visually-hidden-offset: 1px;
+
+	/* Container widths — the same variables a theme.json `settings.layout`
+	 * configuration exposes as global styles. */
+	--gl-container-content: var(--wp--style--global--content-size, 720px);
+	--gl-container-wide: var(--wp--style--global--wide-size, 1200px);
+
+	/* Focus ring — chains through --gl-color-text (DES-25, cycle-3; was
+	 * --gl-color-action) rather than the action colour, which DES-25 made a
+	 * fixed literal with no contrast relationship to --gl-color-surface at
+	 * all. --gl-color-text contrasts with --gl-color-surface by
+	 * construction — the two are this token file's own foreground/
+	 * background pair (DES-27, above) — so the ring can never fall below
+	 * SC 1.4.11's 3:1 floor regardless of what --gl-color-action is set to. */
+	--gl-focus-ring-color: var(--gl-color-text);
+	--gl-focus-ring-width: 2px;
+	--gl-focus-ring-offset: 2px;
+
+	/* Media — cover aspect ratio, grid layout gap, and the minimum card
+	 * width the library/search/catalog grids use in their `minmax()` track
+	 * so the grid stays responsive without a raw pixel breakpoint anywhere
+	 * in game-library.css. Rem, per DES-9, except the two game-single hero
+	 * dimensions below (px, for the same HTML-attribute-matching reason as
+	 * the avatar sizes above).
+	 *
+	 * DES-34/DES-38 (cycle-5): --gl-cover-aspect-ratio is now the single
+	 * authority for every game-cover box in this file (.gl-game-card__cover,
+	 * .gl-game-single__cover, .gl-activity-row__game-cover,
+	 * .gl-search-result__cover) — IGDB's real "cover_big" proportion,
+	 * 264 / 374 (0.7059), not the previous 3 / 4 (0.7500) approximation.
+	 * The two never actually matched IGDB's real cover shape, and
+	 * --gl-game-single-cover-aspect-ratio (below, now removed) duplicated
+	 * this exact 264/374 ratio as a second, independently-maintained token
+	 * — the two silently diverged (this token stayed 3/4) with nothing to
+	 * catch it, so cards with a cover painted a measurably different
+	 * height than cards without one in the same grid row. Must be kept
+	 * numerically in sync with Game_Mapper::COVER_BIG_WIDTH/
+	 * COVER_BIG_HEIGHT (`includes/igdb/class-game-mapper.php`) — there is
+	 * no build step (DD-007) to derive this ratio from those PHP constants
+	 * automatically. */
+	--gl-cover-aspect-ratio: 264 / 374;
+	--gl-grid-gap: 1rem;
+	--gl-grid-card-min: 13.75rem;
+
+	/* /games/{slug}/'s hero cover (MR-1) — IGDB's fixed "cover_big" pixel
+	 * size, matching the width/height attributes game-single.php sets on
+	 * the hero <img> so the browser reserves the box before the image
+	 * loads (CLS). --gl-game-single-cover-width also sets the box's CSS
+	 * width; the box's aspect-ratio is --gl-cover-aspect-ratio above
+	 * (DES-34, cycle-5 — a dedicated --gl-game-single-cover-aspect-ratio
+	 * token used to duplicate the identical 264/374 ratio a second time;
+	 * removed in favour of the one shared token every cover box now uses). */
+	--gl-game-single-cover-width: 264px;
+	--gl-game-single-cover-height: 374px;
+
+	/* /games/{slug}/'s hero header meta column own flex-basis (DES-48,
+	 * cycle-8) — DES-41 (cycle-7) gave .gl-game-single__meta a non-zero
+	 * flex-basis to fix an SC 1.4.10 Reflow defect, but borrowed
+	 * --gl-grid-card-min (above) for its magnitude even though that token's
+	 * one other consumer is an unrelated grid's track minimum; the two
+	 * numbers coincided for no shared reason, so tuning card density would
+	 * have silently moved this wrap threshold too. Deliberately equal to
+	 * --gl-grid-card-min today (DES-39, cycle-6, established the same
+	 * "coincidentally-equal values serving different purposes must be
+	 * independently tunable" split for --gl-thumb-cover-width/
+	 * --gl-spinner-size), independently tunable from it. */
+	--gl-game-single-meta-min: 13.75rem;
+
+	/* The create-invite form's error/success notice slots on /invites/
+	 * (PF-4 cycle-2) — sized for one line of --gl-font-size-body text at
+	 * .gl-notice's own padding plus its 1px border, with headroom for the
+	 * longest message this form renders ("This invite could not be
+	 * emailed. Share the link manually.") to wrap onto a second line at a
+	 * narrow viewport without clipping. DES-28 (cycle-3): this reserves the
+	 * space ONCE, on the shared .gl-invite-form-notices wrapper the two
+	 * mutually-exclusive notices now stack inside — reserving it on each of
+	 * the two notices independently (the original cycle-2 shape) doubled
+	 * the visible gap for no reason, since only one is ever shown at once. */
+	--gl-notice-reserved-height: 3rem;
+
+	/* Field-level error text (PF-4, cycle-3) — one line of
+	 * --gl-font-size-meta text, so an always-in-flow, initially-empty
+	 * .gl-error-text slot (game-card.php's per-entry error, /my-library/'s
+	 * visibility-toggle error, the follow-control error social.js creates)
+	 * never itself shifts the content below it when an error appears. No
+	 * border/background to reserve around (unlike --gl-notice-reserved-height
+	 * above) — .gl-error-text is bare text, so an empty slot at this
+	 * min-height is already visually blank. */
+	--gl-field-error-reserved-height: 1.25rem;
+
+	/* The IGDB search results region on /my-library/ (PF-3, renamed by PF-1
+	 * cycle-2) — a fixed scrollable height, not a max-height, so the busy
+	 * (spinner), populated, empty, and unavailable states all occupy the
+	 * identical box and only the idle -> visible transition (inside the
+	 * input's own hadRecentInput window) shifts anything. A max-height is an
+	 * upper bound, not a reservation: the busy state (spinner alone) was
+	 * sized far smaller than the populated state, so replacing the spinner
+	 * with results still shifted every element below by the difference. */
+	--gl-search-results-height: 24rem;
+}

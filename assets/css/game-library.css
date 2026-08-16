@@ -1,0 +1,1128 @@
+/**
+ * Game Library component stylesheet.
+ *
+ * PF-1 (cycle-5): the design rationale below is inline and load-bearing by
+ * deliberate human ruling, not accidental bloat — this file, not a
+ * separate doc, is its authoritative home. See DD-007/the Boundaries
+ * section before proposing to relocate, trim, or duplicate it elsewhere.
+ *
+ * Every colour, radius, spacing step, type size, avatar size, container
+ * width, focus-ring value, media value, letter-spacing, animation
+ * duration, opacity, and font-weight below is a `var(--gl-…)` read from
+ * `tokens.css` (enqueued first, as this file's dependency — see
+ * `includes/class-assets.php`). The only literals in this file are `0` and
+ * the `1px` border widths of hairline rules; nothing else is a raw length,
+ * duration, or magic number, and nothing is a literal colour function or
+ * hex triplet (AC-049). DES-33 (cycle-3): four raw literals (letter-spacing,
+ * animation-duration, opacity, font-weight) previously escaped this claim
+ * because AC-049's own E2E gate scans for `px`/`rem` lengths only — see
+ * `--gl-tracking-wide`/`--gl-duration-spinner`/`--gl-opacity-disabled`/
+ * `--gl-font-weight-strong` in `tokens.css`.
+ *
+ * Class names below are the markup contract later template tasks render
+ * against (Coder Judgment — no task's Files list overlaps this one, so this
+ * comment block is the map):
+ *
+ * - `.gl-container[--wide]`     page-width wrapper
+ * - `.gl-library-grid`          the card grid on /my-library/, /library/…,
+ *                                /games/, and the search-results list
+ * - `.gl-game-card`             one game, with `__cover`, `__cover-placeholder`,
+ *                                `__body`, `__title`, `__meta`, `__actions`
+ * - `.gl-status-badge[--playing|--finished|--backlog|--wishlist]`
+ *                                visible-text status pill (AC-015)
+ * - `.gl-status-filters`        per-status filter links with counts
+ * - `.gl-activity-list` / `.gl-activity-row`
+ *                                the /activity/ feed, with `__avatar`,
+ *                                `__content`, `__sentence`, `__game`, `__time`
+ * - `.gl-member-list` / `.gl-member-row`
+ *                                the /members/ directory, with `__avatar`,
+ *                                `__name`, `__meta`, `__public-marker`,
+ *                                `__actions`
+ * - `.gl-search-form`, `.gl-search-results`, `.gl-search-result`, `.gl-spinner`,
+ *   `.gl-search-empty`, `.gl-search-unavailable`
+ *                                the IGDB search UI states (AC-004)
+ * - `.gl-field`, `.gl-error-text`, `.gl-notice[--info|--warning]`
+ *                                form rows, field-level errors (DES-32:
+ *                                block-agnostic, not a `.gl-field`
+ *                                descendant), notices
+ * - `.gl-button[--primary|--secondary|--danger]`
+ *                                buttons and button-styled links
+ * - `.gl-pagination`, `.gl-pagination__link`, `.gl-pagination__status`
+ *                                previous/next paging controls
+ * - `.gl-attribution`           "Powered by IGDB.com" line (AC-046)
+ *
+ * DES-24: the classes below are deliberate, undocumented-by-design
+ * theme-override hooks — a route's `<main>` wrapper carries its own
+ * `gl-{route}` class (`gl-activity`, `gl-game-catalog`, `gl-game-single`,
+ * `gl-invites`, `gl-join`, `gl-member-library`, `gl-members`,
+ * `gl-my-library`, `gl-search`) purely so a theme can target one route
+ * without touching every other one, `gl-game-catalog-grid` names the
+ * catalog's own `.gl-library-grid` instance the same way,
+ * `gl-join-form`/`gl-join__inviter` scope `/join/`'s own form/inviter-name
+ * line, and `gl-visibility-toggle` marks the profile-visibility field on
+ * `/my-library/` (`library.js` binds behaviour to `[data-gl-visibility-
+ * toggle]`, not this class). None of them carry a rule of their own here —
+ * this line exists so that absence reads as intentional, not a missed
+ * style.
+ *
+ * @package Game_Library
+ */
+
+/* Focus ring — every interactive element gets a visible :focus-visible
+ * outline; no rule in this file sets `outline: none`. Declared first (the
+ * lowest-specificity, most general rule in the file) so every
+ * component-level rule below can still layer its own state styling without
+ * an ascending-specificity lint conflict. */
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+	outline: var(--gl-focus-ring-width) solid var(--gl-focus-ring-color);
+	outline-offset: var(--gl-focus-ring-offset);
+}
+
+/* DES-13: the plugin's own front-end visually-hidden utility (the front end
+ * has no core `screen-reader-text` class to borrow — that is wp-admin-only).
+ * Used by `invites.js`'s clipboard-copy fallback to keep its transient
+ * textarea off-screen with a class instead of a logical-property-incorrect
+ * inline `left`. */
+.gl-visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+
+	/* DES-47 (cycle-7): calc(-1 * token), not a negative one-pixel literal
+	 * — AC-049(l)'s verify text exempts only 1px border widths, not a
+	 * negative margin; tokenising it is the same "the regex could not see
+	 * this" fix DES-33/DES-37 applied to the other non-length literals this
+	 * file used to carry (see tokens.css's own --gl-visually-hidden-offset
+	 * comment). */
+	margin: calc(-1 * var(--gl-visually-hidden-offset));
+	padding: 0;
+	border: 0;
+	clip-path: inset( 50% );
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+/* Layout. */
+
+.gl-container {
+	max-width: var(--gl-container-content);
+	margin-inline: auto;
+	padding-inline: var(--gl-space-md);
+}
+
+.gl-container--wide {
+	max-width: var(--gl-container-wide);
+}
+
+/* Library / catalog / search-result grid. */
+
+.gl-library-grid {
+	display: grid;
+
+	/* DES-30: min( var(--gl-grid-card-min), 100% ), not the bare token — the
+	 * rem-based track minimum grows with the user's own root font-size
+	 * (DES-9), and at the narrowest supported viewport with text resized to
+	 * 200% the un-guarded minimum (the --gl-grid-card-min step) exceeded
+	 * that viewport's width, scrolling the page horizontally (SC 1.4.4).
+	 * min() caps the track at the viewport width without capping it at the
+	 * default text size, where the un-guarded minimum already fits. (DES-47,
+	 * cycle-7: this comment used to spell out the literal figures — the
+	 * plugin's own AC-049(l) design-token test scans this file's raw text
+	 * for px/rem literals and does not strip comments, so a literal here
+	 * fails that test exactly like a real hardcoded value would.) */
+	grid-template-columns: repeat( auto-fill, minmax( min( var( --gl-grid-card-min ), 100% ), 1fr ) );
+	gap: var(--gl-grid-gap);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+/* Game card. */
+
+.gl-game-card {
+	display: flex;
+	flex-direction: column;
+	background: var(--gl-color-surface);
+	border: 1px solid var(--gl-color-border);
+	border-radius: var(--gl-radius-md);
+	overflow: hidden;
+}
+
+.gl-game-card__cover {
+	position: relative;
+	aspect-ratio: var(--gl-cover-aspect-ratio);
+	/* DES-34 (cycle-5): .gl-game-card is a column flex container, and a
+	 * flex item's default min-height: auto lets its content's intrinsic
+	 * height (the <img>'s own natural aspect ratio at width: 100%, once
+	 * loaded) override the aspect-ratio box height above whenever the two
+	 * disagree — measured: a card with a cover painted meaningfully taller
+	 * than a card without one, in the same grid row, both supposedly on
+	 * the identical fixed --gl-cover-aspect-ratio box. Never a problem for
+	 * the coverless placeholder branch (no <img>, so no intrinsic content
+	 * height to compete with). min-height: 0 removes the auto floor so the
+	 * aspect-ratio box always wins. */
+	min-height: 0;
+	background: var(--gl-color-surface-muted);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.gl-game-card__cover img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+/* DES-23: .gl-search-result__cover-placeholder listed alongside this
+ * block's own selector, not left as an undeclared dependency on it —
+ * search.js's buildCover() borrowed this class without game-card's own
+ * .gl-search-result__cover wrapper being part of the .gl-game-card block. */
+.gl-game-card__cover-placeholder,
+.gl-search-result__cover-placeholder {
+	padding: var(--gl-space-sm);
+	text-align: center;
+	color: var(--gl-color-text-muted);
+	font-size: var(--gl-font-size-meta);
+}
+
+.gl-game-card__body {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	gap: var(--gl-space-xs);
+	padding: var(--gl-space-sm) var(--gl-space-md);
+}
+
+/* DES-23: .gl-search-result__title listed alongside this block's own
+ * selector — search.js's buildResultRow() borrowed .gl-game-card__title
+ * for a search result's title, outside the .gl-game-card block it names. */
+.gl-game-card__title,
+.gl-search-result__title {
+	font-size: var(--gl-font-size-title);
+	font-weight: var(--gl-font-weight-strong);
+	color: var(--gl-color-text);
+	margin: 0;
+}
+
+.gl-game-card__title a {
+	color: inherit;
+	text-decoration: none;
+}
+
+.gl-game-card__title a:where(:hover) {
+	text-decoration: underline;
+}
+
+/* DES-23: .gl-search-result__meta listed alongside this block's own
+ * selector — same borrowed-class shape as .gl-game-card__title above. */
+.gl-game-card__meta,
+.gl-search-result__meta {
+	font-size: var(--gl-font-size-meta);
+	color: var(--gl-color-text-muted);
+}
+
+/* DES-19: horizontal padding matches .gl-game-card__body's own
+ * (--gl-space-md) — the actions row previously had none, so its
+ * <select>/controls sat a --gl-space-md's-worth out of alignment with the
+ * title/badge above, flush to the card's own left border. */
+.gl-game-card__actions {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: var(--gl-space-sm);
+	margin-top: auto;
+	padding: var(--gl-space-xs) var(--gl-space-md) var(--gl-space-sm);
+}
+
+/* Status badge — background + paired "-on" foreground token; text is never
+ * visually hidden (AC-015). */
+
+.gl-status-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--gl-space-xs);
+	padding: var(--gl-space-xs) var(--gl-space-sm);
+	border-radius: var(--gl-radius-pill);
+	font-size: var(--gl-font-size-meta);
+	font-weight: var(--gl-font-weight-strong);
+	line-height: var(--gl-line-height-tight);
+	white-space: nowrap;
+}
+
+.gl-status-badge--playing {
+	background: var(--gl-color-status-playing);
+	color: var(--gl-color-status-playing-on);
+}
+
+.gl-status-badge--finished {
+	background: var(--gl-color-status-finished);
+	color: var(--gl-color-status-finished-on);
+}
+
+.gl-status-badge--backlog {
+	background: var(--gl-color-status-backlog);
+	color: var(--gl-color-status-backlog-on);
+}
+
+.gl-status-badge--wishlist {
+	background: var(--gl-color-status-wishlist);
+	color: var(--gl-color-status-wishlist-on);
+}
+
+/* DES-18: cycle-1's DES-7 fix (align a status badge to the top of its own
+ * flex-column card body) was applied to the base .gl-status-badge rule
+ * above instead of scoped to this one flex-column context — every other
+ * .gl-status-badge consumer is a flex ROW with align-items: center, where
+ * the badge's own align-self: start pushed it well above its row's
+ * vertical centre (measured on /activity/ and /games/{slug}/'s holder
+ * rows). Declared after every .gl-status-badge rule above so this
+ * higher-specificity descendant selector never precedes a lower-specificity
+ * rule targeting the same element (stylelint no-descending-specificity). */
+.gl-game-card__body .gl-status-badge {
+	align-self: start;
+}
+
+/* Status filter links. */
+
+.gl-status-filters {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--gl-space-sm);
+	margin-block-end: var(--gl-space-md);
+	padding: 0;
+	list-style: none;
+}
+
+.gl-status-filters a {
+	display: inline-block;
+	padding: var(--gl-space-xs) var(--gl-space-sm);
+	border: 1px solid var(--gl-color-border-interactive);
+	border-radius: var(--gl-radius-pill);
+	color: var(--gl-color-text);
+	font-size: var(--gl-font-size-meta);
+	text-decoration: none;
+}
+
+.gl-status-filters a:where(:hover) {
+	background: var(--gl-color-surface-muted);
+}
+
+.gl-status-filters a[aria-current="true"] {
+	background: var(--gl-color-action);
+	border-color: var(--gl-color-action);
+	color: var(--gl-color-action-on);
+}
+
+/* Activity feed. */
+
+.gl-activity-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--gl-space-md);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.gl-activity-row {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--gl-space-sm);
+	padding-block: var(--gl-space-sm);
+	border-bottom: 1px solid var(--gl-color-border);
+}
+
+.gl-activity-row__avatar img {
+	width: var(--gl-avatar-md);
+	height: var(--gl-avatar-md);
+	border-radius: var(--gl-radius-pill);
+	object-fit: cover;
+	display: block;
+}
+
+.gl-activity-row__content {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	gap: var(--gl-space-xs);
+}
+
+.gl-activity-row__sentence {
+	font-size: var(--gl-font-size-body);
+	color: var(--gl-color-text);
+}
+
+.gl-activity-row__sentence a {
+	color: var(--gl-color-action);
+}
+
+.gl-activity-row__game {
+	display: flex;
+	align-items: center;
+	gap: var(--gl-space-sm);
+
+	/* DES-46 (cycle-7): same WCAG 2.1 SC 1.4.10 Reflow fix as
+	 * .gl-member-row/.gl-invite-row (:424-431) and .gl-game-single__holder
+	 * (:1073-1079) — a variable-length game title next to a
+	 * white-space: nowrap status badge (AC-015) with no wrap point forces
+	 * the whole feed to scroll horizontally at a narrow viewport. This is
+	 * the fourth row-shaped selector needing this fix independently
+	 * (DES-44 tracks the underlying duplication as a recommend-only
+	 * refactor, not actioned here). */
+	flex-wrap: wrap;
+}
+
+.gl-activity-row__game-cover {
+	width: var(--gl-thumb-cover-width);
+	aspect-ratio: var(--gl-cover-aspect-ratio);
+	border-radius: var(--gl-radius-sm);
+	overflow: hidden;
+	background: var(--gl-color-surface-muted);
+	flex-shrink: 0;
+}
+
+.gl-activity-row__game-cover img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.gl-activity-row__time {
+	font-size: var(--gl-font-size-meta);
+	color: var(--gl-color-text-muted);
+}
+
+/* /library/{nicename}/'s identity header (DES-15) — avatar, name, and the
+ * Follow/Unfollow control in one row, distinct from `.gl-member-row` (the
+ * `/members/` directory's per-row layout below): no rule existed for this
+ * class, so the header fell into raw block flow with no avatar sizing. */
+
+.gl-member-header {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: var(--gl-space-md);
+	margin-block-end: var(--gl-space-lg);
+}
+
+.gl-member-header__avatar img {
+	width: var(--gl-avatar-lg);
+	height: var(--gl-avatar-lg);
+	border-radius: var(--gl-radius-pill);
+	object-fit: cover;
+	display: block;
+}
+
+.gl-member-header h1 {
+	margin: 0;
+}
+
+/* Member directory. */
+
+.gl-member-list,
+.gl-invite-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--gl-space-sm);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.gl-member-row,
+.gl-invite-row {
+	display: flex;
+	/* DES-35 (cycle-5): WCAG 2.1 SC 1.4.10 Reflow — this row could not
+	 * break onto more than one line, so at a narrow-viewport, doubled-text
+	 * probe it forced the whole page to scroll horizontally instead
+	 * (measured, worst on /members/). Matches .gl-search-result,
+	 * .gl-member-header, and .gl-game-card__actions, which already wrap. */
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--gl-space-sm);
+	padding: var(--gl-space-sm);
+	background: var(--gl-color-surface);
+	border: 1px solid var(--gl-color-border);
+	border-radius: var(--gl-radius-md);
+}
+
+.gl-member-row__avatar img {
+	width: var(--gl-avatar-md);
+	height: var(--gl-avatar-md);
+	border-radius: var(--gl-radius-pill);
+	object-fit: cover;
+	display: block;
+}
+
+.gl-member-row__identity {
+	display: flex;
+	flex-direction: column;
+	gap: var(--gl-space-xs);
+}
+
+.gl-member-row__name {
+	font-weight: var(--gl-font-weight-strong);
+	color: var(--gl-color-text);
+}
+
+.gl-member-row__name a {
+	color: inherit;
+	text-decoration: none;
+}
+
+.gl-member-row__name a:where(:hover) {
+	text-decoration: underline;
+}
+
+.gl-member-row__meta {
+	font-size: var(--gl-font-size-meta);
+	color: var(--gl-color-text-muted);
+}
+
+.gl-member-row__public-marker {
+	font-size: var(--gl-font-size-meta);
+
+	/* DES-26: bare foreground text on the ambient surface uses the
+	 * text-mixed `-text` variant, not the raw saturated colour — see
+	 * tokens.css's own docblock for the pair this token belongs to. */
+	color: var(--gl-color-success-text);
+}
+
+.gl-member-row__actions,
+.gl-invite-row__actions {
+	margin-inline-start: auto;
+}
+
+/* Invite list — layout composed from .gl-member-list/.gl-member-row above
+ * (bordered, rounded flex row, actions pushed to the end); only the parts
+ * genuinely new to an invite row are declared here (DES-4). */
+
+/* DES-20: no rule existed for this class, so the Create-invite button's
+ * bottom edge and .gl-invite-list's own top edge (which zeroes its own
+ * margin) sat flush together with zero gap — the button read as if it
+ * belonged inside the first invite card. */
+.gl-invite-form {
+	margin-block-end: var(--gl-space-lg);
+}
+
+.gl-invite-row__body {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	gap: var(--gl-space-xs);
+	min-width: 0;
+}
+
+.gl-invite-row__code {
+	margin: 0;
+	font-family: var(--gl-font-family-mono);
+	font-variant-numeric: tabular-nums;
+	font-weight: var(--gl-font-weight-strong);
+	letter-spacing: var(--gl-tracking-wide);
+	color: var(--gl-color-text);
+
+	/* DES-45 (cycle-7): SC 1.4.10/1.4.4 — the 20-character invite code has
+	 * no break opportunity, measured at runtime as horizontal scroll on
+	 * /invites/ at the narrowest supported viewport, default text size,
+	 * once a real row was seeded (every prior cycle probed this route
+	 * empty). overflow-wrap: anywhere, not break-word — break-word only
+	 * breaks for line-box purposes and leaves min-content sizing (and
+	 * therefore a flex/grid ancestor's own sizing) unaffected; anywhere
+	 * participates in min-content sizing, which is what actually closes the
+	 * overflow. */
+	overflow-wrap: anywhere;
+}
+
+.gl-invite-row__url {
+	display: flex;
+	align-items: center;
+	gap: var(--gl-space-sm);
+	flex-wrap: wrap;
+	margin: 0;
+	font-size: var(--gl-font-size-meta);
+}
+
+.gl-invite-row__url a {
+
+	/* DES-45 (cycle-7): the redemption URL renders as unbroken link text;
+	 * see .gl-invite-row__code's own comment above for the overflow-wrap:
+	 * anywhere vs break-word reasoning — identical here. This anchor is a
+	 * flex item of .gl-invite-row__url with the default min-width: auto, so
+	 * without this it floors at the full URL's min-content width. */
+	overflow-wrap: anywhere;
+}
+
+.gl-invite-row__copied {
+
+	/* DES-26: see .gl-member-row__public-marker above — bare foreground
+	 * text uses the text-mixed `-text` variant. */
+	color: var(--gl-color-success-text);
+	font-size: var(--gl-font-size-meta);
+}
+
+.gl-invite-row__meta {
+	margin: 0;
+	font-size: var(--gl-font-size-meta);
+	color: var(--gl-color-text-muted);
+}
+
+/* DES-24: no rule existed for this class, so the status ran directly into
+ * the created/expires dates with no visual separation ("Pending Created
+ * August 14, 2026 · Expires August 28, 2026"). */
+.gl-invite-row__status {
+	font-weight: var(--gl-font-weight-strong);
+	margin-inline-end: var(--gl-space-xs);
+	color: var(--gl-color-text);
+}
+
+/* Search box. */
+
+.gl-search-form {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--gl-space-sm);
+	margin-block-end: var(--gl-space-md);
+}
+
+.gl-search-form input[type="search"] {
+	flex: 1;
+	min-width: 0;
+}
+
+/* DES-40 (cycle-5): one rule, not an unconditional display: flex block plus
+ * a separate [hidden] counter-rule that used to fight it. An author rule
+ * always beats a UA rule regardless of specificity or origin order, so the
+ * old unconditional .gl-search-results { display: flex; } was itself what
+ * out-ranked the UA's own [hidden] { display: none } — a previous version
+ * of this comment described the mechanism backwards (claiming origin order
+ * resolved in the UA rule's favour) and prescribed a counter-rule to fix a
+ * problem the unconditional block was actually causing. Scoping every
+ * property to :not([hidden]) instead removes the override outright: nothing
+ * here fights the UA rule any more, so there is nothing left to counter.
+ *
+ * PF-3/PF-1: reserves identical space for the busy (spinner), populated,
+ * empty, and unavailable states so a search response replacing the spinner
+ * reflows nothing — only the very first hidden -> visible transition (a
+ * direct result of the triggering keystroke) shifts layout. `height`, not
+ * `max-height` (PF-1 cycle-2): a max-height is only an upper bound, so the
+ * spinner-only busy state was still sized by the spinner alone and the
+ * populated state grew the box up to the cap, shifting everything below it
+ * once results replaced the spinner. */
+.gl-search-results:not([hidden]) {
+	display: flex;
+	flex-direction: column;
+	gap: var(--gl-space-sm);
+	height: var(--gl-search-results-height);
+	overflow-y: auto;
+}
+
+.gl-search-loading {
+	display: flex;
+	align-items: center;
+	gap: var(--gl-space-sm);
+	padding: var(--gl-space-sm);
+	color: var(--gl-color-text-muted);
+	font-size: var(--gl-font-size-body);
+}
+
+.gl-search-result {
+	display: flex;
+	align-items: center;
+	gap: var(--gl-space-sm);
+	padding: var(--gl-space-sm);
+	border: 1px solid var(--gl-color-border);
+	border-radius: var(--gl-radius-md);
+	flex-wrap: wrap;
+}
+
+.gl-search-result__cover {
+	width: var(--gl-thumb-cover-width);
+	aspect-ratio: var(--gl-cover-aspect-ratio);
+	border-radius: var(--gl-radius-sm);
+	overflow: hidden;
+	background: var(--gl-color-surface-muted);
+	flex-shrink: 0;
+}
+
+.gl-search-result__cover img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.gl-search-result__body {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	gap: var(--gl-space-xs);
+	min-width: 0;
+}
+
+.gl-search-result__actions {
+	display: flex;
+	align-items: center;
+	gap: var(--gl-space-sm);
+	flex-wrap: wrap;
+}
+
+.gl-search-empty,
+.gl-search-unavailable {
+	padding: var(--gl-space-md);
+	text-align: center;
+	color: var(--gl-color-text-muted);
+}
+
+/* DES-12(a): every template's "nothing here yet" state (seven templates,
+ * including the /activity/ empty state that steers a new member toward
+ * /members/) renders through this one class. */
+.gl-empty-state {
+	padding: var(--gl-space-lg) var(--gl-space-md);
+	text-align: center;
+	color: var(--gl-color-text-muted);
+}
+
+.gl-spinner {
+	display: inline-block;
+	width: var(--gl-spinner-size);
+	height: var(--gl-spinner-size);
+	border: 1px solid var(--gl-color-border);
+	border-top-color: var(--gl-color-action);
+	border-radius: var(--gl-radius-pill);
+	animation: gl-spin var(--gl-duration-spinner) linear infinite;
+}
+
+@keyframes gl-spin {
+
+	to {
+		transform: rotate( 360deg );
+	}
+}
+
+@media ( prefers-reduced-motion: reduce ) {
+
+	.gl-spinner {
+		animation: none;
+	}
+}
+
+/* Forms. */
+
+.gl-field {
+	display: flex;
+	flex-direction: column;
+	gap: var(--gl-space-xs);
+	margin-block-end: var(--gl-space-md);
+}
+
+.gl-field label {
+	font-weight: var(--gl-font-weight-strong);
+	font-size: var(--gl-font-size-body);
+	color: var(--gl-color-text);
+}
+
+.gl-field input[type="text"],
+.gl-field input[type="email"],
+.gl-field input[type="password"],
+.gl-field input[type="search"],
+.gl-field select,
+.gl-field textarea,
+.gl-game-card__actions select,
+.gl-search-result__actions select,
+.gl-search-form input[type="search"] {
+	padding: var(--gl-space-xs) var(--gl-space-sm);
+	border: 1px solid var(--gl-color-border-interactive);
+	border-radius: var(--gl-radius-sm);
+	background: var(--gl-color-surface);
+	color: var(--gl-color-text);
+	font-size: var(--gl-font-size-body);
+}
+
+.gl-field[data-invalid="true"] input,
+.gl-field[data-invalid="true"] select,
+.gl-field[data-invalid="true"] textarea {
+
+	/* DES-26: raw --gl-color-error, not a mixed/diluted variant — with
+	 * --gl-color-surface now a fixed literal (DES-27, above), the raw value
+	 * already measures 6.47:1 against it, well past SC 1.4.11's 3:1 border
+	 * floor; diluting it toward --gl-color-border-interactive's own 55%-mix
+	 * shape would only weaken this border for no contrast benefit. */
+	border-color: var(--gl-color-error);
+}
+
+/* DES-32: block-agnostic name (was .gl-field__error) — this treatment is
+ * just a colour and a size, used inside .gl-field (join.php,
+ * gl-visibility-toggle), .gl-game-card__actions, .gl-invite-row,
+ * .gl-search-result__actions, and a JS-created follow-control error, none
+ * of which are actually .gl-field descendants. PF-4 (cycle-3): reserves
+ * --gl-field-error-reserved-height so an always-in-flow, initially-empty
+ * slot (game-card.php's per-entry error, /my-library/'s visibility-toggle
+ * error, social.js's follow-control error) never itself shifts the
+ * content below it — those three slots no longer toggle the `hidden`
+ * attribute (see library.js/social.js); an empty slot at this height is
+ * already visually blank, since .gl-error-text carries no
+ * border/background to hide. search.js's/invites.js's own error slots
+ * keep the `hidden`-attribute toggle (PF-4 exempts them — search.js's
+ * lives inside the fixed-height .gl-search-results scroll box and cannot
+ * shift anything outside it; invites.js's are not flagged as CLS-bearing
+ * surfaces), so the reserved height is simply inert while `hidden`. */
+.gl-error-text {
+	min-height: var(--gl-field-error-reserved-height);
+	color: var(--gl-color-error-text);
+	font-size: var(--gl-font-size-meta);
+}
+
+.gl-notice {
+	padding: var(--gl-space-sm) var(--gl-space-md);
+	border: 1px solid var(--gl-color-border);
+	border-radius: var(--gl-radius-sm);
+	font-size: var(--gl-font-size-body);
+	margin-block-end: var(--gl-space-md);
+}
+
+.gl-notice--info {
+	background: var(--gl-color-surface-muted);
+	color: var(--gl-color-text);
+}
+
+/* DES-26: background/foreground uses the -on pair, exactly like the
+ * status colours and .gl-button--primary do — a raw --gl-color-error/
+ * -success value used as bare text against --gl-color-surface-muted had
+ * no contrast relationship to that background under a theme that moved
+ * it (fixed by DES-27, above, but this is also the more robust pattern
+ * regardless). */
+/* DES-42 (cycle-7): renamed from .gl-notice--warning — every consumer
+ * (join.php, invites.php, invites.js) is a genuine error carrying
+ * role="alert", but this modifier painted from the error palette while
+ * being named for a warning tier that does not otherwise exist in this
+ * plugin. A future genuine advisory notice can now add a real --warning
+ * modifier without colliding with this one. */
+.gl-notice--error {
+	background: var(--gl-color-error);
+	color: var(--gl-color-error-on);
+}
+
+.gl-notice--success {
+	background: var(--gl-color-success);
+	color: var(--gl-color-success-on);
+}
+
+/* PF-4 (cycle-2)/DES-28/DES-29 (cycle-3): the create-invite form's
+ * error/success notices stay in flow at all times so a create response
+ * toggling between them never itself shifts layout — only the new invite
+ * row's own insertion does. DES-28: the two notices now share ONE
+ * reservation on this wrapper (a CSS grid, both children in the same
+ * cell) instead of each reserving --gl-notice-reserved-height
+ * independently, which doubled the visible gap on every page load since
+ * only one of the two is ever shown at once. */
+.gl-invite-form-notices {
+	display: grid;
+	min-height: var(--gl-notice-reserved-height);
+	margin-block-end: var(--gl-space-md);
+}
+
+.gl-invite-form-notices .gl-invite-form-notice {
+	grid-area: 1 / 1;
+	margin-block-end: 0;
+}
+
+/* DES-29: `:empty`, not `visibility: hidden` — a `visibility: hidden`
+ * element is removed from the accessibility tree, so this
+ * `role="alert"`/`role="status"` live region was never monitored while
+ * empty; invites.js writes textContent and THEN revealed it, which
+ * depends on the AT treating "node became visible with content already
+ * in it" as an insertion. Keeping the element always rendered and using
+ * `:empty` to hide its chrome (no border/background to paint when there
+ * is nothing to say) keeps the live region in the tree at all times, so
+ * the textContent write itself is what a screen reader observes. */
+.gl-invite-form-notice:empty {
+	border-color: transparent;
+	background: none;
+}
+
+/* Buttons. */
+
+.gl-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--gl-space-xs);
+	padding: var(--gl-space-xs) var(--gl-space-md);
+	border: 1px solid transparent;
+	border-radius: var(--gl-radius-sm);
+	font-size: var(--gl-font-size-body);
+	font-weight: var(--gl-font-weight-strong);
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.gl-button--primary {
+	background: var(--gl-color-action);
+	color: var(--gl-color-action-on);
+}
+
+.gl-button--primary:hover {
+	background: var(--gl-color-action-hover);
+}
+
+.gl-button--secondary {
+	background: var(--gl-color-surface);
+	border-color: var(--gl-color-border-interactive);
+	color: var(--gl-color-text);
+}
+
+.gl-button--secondary:hover {
+	background: var(--gl-color-surface-muted);
+}
+
+.gl-button--danger {
+	background: var(--gl-color-surface);
+
+	/* DES-26: border stays the raw, full-strength colour (same reasoning as
+	 * .gl-field[data-invalid] above); text uses the -text variant, matching
+	 * every other bare-text feedback-colour consumer. */
+	border-color: var(--gl-color-error);
+	color: var(--gl-color-error-text);
+}
+
+.gl-button--danger:hover {
+	background: var(--gl-color-error);
+	color: var(--gl-color-error-on);
+}
+
+.gl-button[disabled] {
+	opacity: var(--gl-opacity-disabled);
+	cursor: not-allowed;
+}
+
+/* DES-15: placed after every .gl-button rule above (not alongside
+ * .gl-member-header's other rules further up the file) so this
+ * higher-specificity descendant selector never precedes a lower-specificity
+ * .gl-button rule targeting the same element (stylelint
+ * no-descending-specificity). */
+.gl-member-header .gl-button {
+	margin-inline-start: auto;
+}
+
+/* Pagination. */
+
+.gl-pagination {
+	display: flex;
+	align-items: center;
+
+	/* DES-49 (cycle-9): WCAG 2.1 SC 1.4.4/1.4.10 -- see .gl-member-row/
+	 * .gl-invite-row (:441) for the same defect and fix. */
+	flex-wrap: wrap;
+	justify-content: space-between;
+	gap: var(--gl-space-sm);
+	margin-block-start: var(--gl-space-lg);
+}
+
+.gl-pagination__link {
+	padding: var(--gl-space-xs) var(--gl-space-md);
+	border: 1px solid var(--gl-color-border-interactive);
+	border-radius: var(--gl-radius-sm);
+	color: var(--gl-color-text);
+	text-decoration: none;
+}
+
+.gl-pagination__link:hover {
+	background: var(--gl-color-surface-muted);
+}
+
+/* DES-21(b): no rule existed for the disabled state, so a Previous/Next
+ * <span aria-disabled="true"> (the "no such page" case) rendered visually
+ * identical to a working link — full-strength colour, same border,
+ * opacity 1 — and the class-scoped :hover above still lit it up. Compare
+ * .gl-button[disabled] above, which already gets this treatment. */
+.gl-pagination__link[aria-disabled="true"] {
+	opacity: var(--gl-opacity-disabled);
+	cursor: not-allowed;
+}
+
+.gl-pagination__link[aria-disabled="true"]:hover {
+	background: none;
+}
+
+.gl-pagination__status {
+	font-size: var(--gl-font-size-meta);
+	color: var(--gl-color-text-muted);
+}
+
+/* Attribution. */
+
+.gl-attribution {
+	font-size: var(--gl-font-size-meta);
+	color: var(--gl-color-text-muted);
+	margin-block-start: var(--gl-space-lg);
+}
+
+.gl-attribution a {
+	color: inherit;
+}
+
+/* Game single (/games/{slug}/) — the public, search-indexed page (MR-1).
+ * `.gl-game-single__cover` reuses `.gl-game-card__cover`'s ratio-box/
+ * placeholder pattern but at a fixed IGDB "cover_big" size instead of a
+ * grid-responsive one, matching the hero <img>'s `width`/`height`
+ * attributes in game-single.php so the browser reserves the box before
+ * the image loads (CLS). */
+
+.gl-game-single__header {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: var(--gl-space-lg);
+	margin-block-end: var(--gl-space-lg);
+}
+
+.gl-game-single__cover {
+	position: relative;
+	flex-shrink: 0;
+
+	/* DES-30: min( var(--gl-game-single-cover-width), 100% ), not the bare
+	 * px token — same SC 1.4.4 reasoning as .gl-library-grid above; at the
+	 * narrowest supported viewport with text resized to 200%, the
+	 * container's own rem padding grows past this fixed cover width,
+	 * scrolling the page horizontally. (DES-47, cycle-7: paraphrased away
+	 * from literal figures — see .gl-library-grid's own comment above for
+	 * why.) */
+	width: min( var(--gl-game-single-cover-width), 100% );
+	aspect-ratio: var(--gl-cover-aspect-ratio);
+	background: var(--gl-color-surface-muted);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: var(--gl-radius-md);
+	overflow: hidden;
+}
+
+.gl-game-single__cover img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.gl-game-single__cover-placeholder {
+	padding: var(--gl-space-sm);
+	text-align: center;
+	color: var(--gl-color-text-muted);
+	font-size: var(--gl-font-size-meta);
+}
+
+.gl-game-single__meta {
+	display: flex;
+	flex-direction: column;
+	gap: var(--gl-space-sm);
+
+	/* DES-41 (cycle-7): flex: 1 1 var(--gl-game-single-meta-min), not the
+	 * bare `flex: 1` this used to be — `flex: 1` resolves to
+	 * `flex-basis: 0%`, and a flex item's wrap decision is made against its
+	 * hypothetical main size, which for a 0% basis is zero. That kept
+	 * .gl-game-single__header (the flex-wrap: wrap parent) from ever
+	 * measuring past its own content width, so wrap never fired at the
+	 * narrowest supported viewport and this element (plus its
+	 * min-width: 0 descendants) laid out at zero width and spilled —
+	 * SC 1.4.10 Reflow, measured at runtime as significant horizontal
+	 * scroll on /games/{slug}/ at DEFAULT text size (not just 200%). A
+	 * non-zero flex-basis restores a real hypothetical size to wrap
+	 * against, at default and desktop viewports alike (flex-grow: 1 still
+	 * fills). DES-48 (cycle-8): the basis token used to be the library
+	 * grid's own track-minimum token, reused only because its magnitude
+	 * happened to work here — this column is not a grid card, so it now has
+	 * its own token, seeded to the same starting value but independently
+	 * tunable (see that token's own comment in tokens.css). */
+	flex: 1 1 var(--gl-game-single-meta-min);
+	min-width: 0;
+}
+
+.gl-game-single__release-date {
+	margin: 0;
+	color: var(--gl-color-text-muted);
+	font-size: var(--gl-font-size-body);
+}
+
+.gl-game-single__label {
+	margin: var(--gl-space-sm) 0 0;
+	font-size: var(--gl-font-size-meta);
+	font-weight: var(--gl-font-weight-strong);
+	color: var(--gl-color-text-muted);
+	text-transform: uppercase;
+	letter-spacing: var(--gl-tracking-wide);
+}
+
+.gl-game-single__genres,
+.gl-game-single__platforms {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--gl-space-xs);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	font-size: var(--gl-font-size-meta);
+	color: var(--gl-color-text-muted);
+}
+
+.gl-game-single__genres li,
+.gl-game-single__platforms li {
+	padding: var(--gl-space-xs) var(--gl-space-sm);
+	background: var(--gl-color-surface-muted);
+	border-radius: var(--gl-radius-pill);
+}
+
+.gl-game-single__summary {
+	margin-block-end: var(--gl-space-lg);
+	color: var(--gl-color-text);
+}
+
+.gl-game-single__status-counts {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--gl-space-md);
+	margin: 0 0 var(--gl-space-lg);
+	padding: 0;
+	list-style: none;
+	font-size: var(--gl-font-size-body);
+}
+
+.gl-game-single__holders {
+	display: flex;
+	flex-direction: column;
+	gap: var(--gl-space-sm);
+	margin: 0 0 var(--gl-space-lg);
+	padding: 0;
+	list-style: none;
+}
+
+.gl-game-single__holder {
+	display: flex;
+	/* DES-35 (cycle-5): see .gl-member-row/.gl-invite-row's own comment on
+	 * the identical fix — WCAG 2.1 SC 1.4.10 Reflow, measured horizontal
+	 * overflow on /games/{slug}/ at the same narrow-viewport,
+	 * doubled-text probe. */
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--gl-space-sm);
+	padding: var(--gl-space-sm);
+	background: var(--gl-color-surface);
+	border: 1px solid var(--gl-color-border);
+	border-radius: var(--gl-radius-md);
+}
+
+.gl-game-single__holder-avatar img {
+	width: var(--gl-avatar-sm);
+	height: var(--gl-avatar-sm);
+	border-radius: var(--gl-radius-pill);
+	object-fit: cover;
+	display: block;
+}
