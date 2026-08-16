@@ -1,0 +1,463 @@
+/**
+ * Game Library front-end styles.
+ *
+ * Layout and components are plugin-owned and deliberately designed. Every colour,
+ * font size, and spacing value routes through the active theme's tokens
+ * (var(--wp--preset--*)) with a literal fallback — there is no hardcoded brand
+ * palette here, so the views inherit the host theme's look.
+ */
+
+.gl-app {
+	--gl-gap: var( --wp--preset--spacing--40, 1rem );
+	--gl-gap-lg: var( --wp--preset--spacing--60, 2rem );
+	--gl-radius: 8px;
+	--gl-surface: var( --wp--preset--color--base, #ffffff );
+	--gl-ink: var( --wp--preset--color--contrast, #1a1a1a );
+	--gl-line: var( --wp--custom--color--border, rgba( 0, 0, 0, 0.12 ) );
+	color: var( --wp--preset--color--contrast, #1a1a1a );
+	font-size: var( --wp--preset--font-size--medium, 1rem );
+	max-width: var( --wp--style--global--wide-size, 1100px );
+	margin-inline: auto;
+}
+
+/* ------------------------------------------------------------------ Tabs */
+
+.gl-tabs {
+	display: flex;
+	gap: var( --wp--preset--spacing--20, 0.5rem );
+	margin-bottom: var( --gl-gap-lg );
+	border-bottom: 1px solid var( --gl-line );
+}
+
+.gl-tab {
+	appearance: none;
+	background: transparent;
+	border: 0;
+	border-bottom: 3px solid transparent;
+	padding: var( --wp--preset--spacing--20, 0.5rem ) var( --wp--preset--spacing--30, 0.75rem );
+	font-size: var( --wp--preset--font-size--medium, 1rem );
+	font-weight: 600;
+	color: var( --wp--preset--color--contrast, #1a1a1a );
+	cursor: pointer;
+}
+
+.gl-tab.is-active {
+	border-bottom-color: var( --wp--preset--color--accent-1, #3858e9 );
+}
+
+.gl-panel[hidden] {
+	display: none;
+}
+
+/* --------------------------------------------------------------- Search */
+
+.gl-search {
+	margin-bottom: var( --gl-gap-lg );
+	padding: var( --gl-gap );
+	background: var( --wp--preset--color--base-2, var( --wp--custom--color--surface, rgba( 0, 0, 0, 0.03 ) ) );
+	border-radius: var( --gl-radius );
+}
+
+.gl-search__form {
+	display: flex;
+	gap: var( --wp--preset--spacing--20, 0.5rem );
+	flex-wrap: wrap;
+}
+
+.gl-search__input {
+	flex: 1 1 16rem;
+	padding: var( --wp--preset--spacing--20, 0.5rem );
+	font-size: var( --wp--preset--font-size--medium, 1rem );
+	border: 1px solid var( --gl-line );
+	border-radius: var( --gl-radius );
+	background: var( --wp--preset--color--base, #ffffff );
+	color: var( --wp--preset--color--contrast, #1a1a1a );
+}
+
+.gl-search__status {
+	margin-top: var( --wp--preset--spacing--20, 0.5rem );
+	min-height: 1.5em;
+	font-size: var( --wp--preset--font-size--small, 0.875rem );
+}
+
+.gl-search__status.is-error {
+	color: var( --wp--preset--color--accent-3, #b3261e );
+	font-weight: 600;
+}
+
+.gl-search__results {
+	margin-top: var( --gl-gap );
+	display: grid;
+	gap: var( --wp--preset--spacing--20, 0.5rem );
+}
+
+.gl-search-result {
+	display: flex;
+	gap: var( --wp--preset--spacing--30, 0.75rem );
+	align-items: center;
+	padding: var( --wp--preset--spacing--20, 0.5rem );
+	border: 1px solid var( --gl-line );
+	border-radius: var( --gl-radius );
+	background: var( --wp--preset--color--base, #ffffff );
+}
+
+.gl-search-result__thumb {
+	width: 48px;
+	height: 64px;
+	object-fit: cover;
+	border-radius: 4px;
+	background: var( --wp--custom--color--surface, rgba( 0, 0, 0, 0.06 ) );
+	flex: 0 0 auto;
+}
+
+.gl-search-result__title {
+	flex: 1 1 auto;
+	font-weight: 600;
+}
+
+.gl-search-result__actions {
+	display: flex;
+	gap: var( --wp--preset--spacing--20, 0.5rem );
+	align-items: center;
+}
+
+/* ----------------------------------------------------------- Card grid */
+
+.gl-library__heading,
+.gl-feed__heading,
+.gl-invites__heading,
+.gl-library-view__title {
+	font-size: var( --wp--preset--font-size--large, 1.5rem );
+	display: flex;
+	align-items: baseline;
+	gap: var( --wp--preset--spacing--20, 0.5rem );
+}
+
+.gl-count {
+	font-size: var( --wp--preset--font-size--small, 0.875rem );
+	opacity: 0.7;
+	font-weight: 400;
+}
+
+.gl-grid {
+	display: grid;
+	grid-template-columns: repeat( auto-fill, minmax( 160px, 1fr ) );
+	gap: var( --gl-gap );
+	margin-block: var( --gl-gap );
+}
+
+.gl-card {
+	display: flex;
+	flex-direction: column;
+	background: var( --wp--preset--color--base, #ffffff );
+	border: 1px solid var( --gl-line );
+	border-radius: var( --gl-radius );
+	overflow: hidden;
+	transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.gl-card:hover,
+.gl-card:focus-within {
+	transform: translateY( -2px );
+	box-shadow: 0 6px 18px var( --wp--custom--color--shadow, rgba( 0, 0, 0, 0.12 ) );
+}
+
+/* Cover-forward: the cover image leads each card. */
+.gl-card__cover {
+	width: 100%;
+	aspect-ratio: 3 / 4;
+	background: var( --wp--custom--color--surface, rgba( 0, 0, 0, 0.06 ) );
+}
+
+.gl-card__img {
+	display: block;
+	width: 100%;
+	min-width: 120px;
+	height: 100%;
+	object-fit: cover;
+}
+
+.gl-card__body {
+	display: flex;
+	flex-direction: column;
+	gap: var( --wp--preset--spacing--20, 0.5rem );
+	padding: var( --wp--preset--spacing--30, 0.75rem );
+}
+
+.gl-card__title {
+	font-size: var( --wp--preset--font-size--medium, 1rem );
+	margin: 0;
+	line-height: 1.25;
+}
+
+.gl-card__controls {
+	display: flex;
+	gap: var( --wp--preset--spacing--20, 0.5rem );
+	margin-top: auto;
+	flex-wrap: wrap;
+}
+
+.gl-status-control {
+	flex: 1 1 auto;
+	padding: var( --wp--preset--spacing--10, 0.35rem );
+	border: 1px solid var( --gl-line );
+	border-radius: 6px;
+	background: var( --wp--preset--color--base, #ffffff );
+	color: var( --wp--preset--color--contrast, #1a1a1a );
+	font-size: var( --wp--preset--font-size--small, 0.875rem );
+}
+
+/* --------------------------------------------------------------- Badge */
+
+.gl-badge {
+	display: inline-block;
+	align-self: flex-start;
+	padding: 0.2em 0.7em;
+	border-radius: 999px;
+	font-size: var( --wp--preset--font-size--small, 0.8125rem );
+	font-weight: 700;
+	line-height: 1.4;
+	/*
+	 * Non-transparent by design (AC-019c). Deliberate, documented exception to the
+	 * theme-token colour rule (AC-019f) for the four semantic STATUS colours only:
+	 * these are states, not brand colour, and must stay legible under ANY theme.
+	 * Binding a badge's background and text to two *independent* theme presets
+	 * (accent-N fill + base/contrast text) gave no contrast guarantee — under some
+	 * themes accent-1 resolves pale and white text became unreadable. Each status
+	 * now uses a self-contained, WCAG-AA-checked fg/bg pair instead.
+	 */
+	background-color: #e2e8f0;
+	color: #1e293b;
+}
+
+.gl-badge--playing {
+	background-color: #1d4ed8;
+	color: #ffffff;
+}
+
+.gl-badge--finished {
+	background-color: #15803d;
+	color: #ffffff;
+}
+
+.gl-badge--backlog {
+	background-color: #fef3c7;
+	color: #92400e;
+}
+
+.gl-badge--wishlist {
+	background-color: #6d28d9;
+	color: #ffffff;
+}
+
+/* --------------------------------------------------------------- Feed */
+
+.gl-feed {
+	display: flex;
+	flex-direction: column;
+	gap: var( --wp--preset--spacing--30, 0.75rem );
+	margin-block: var( --gl-gap );
+}
+
+.gl-feed-item {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 0.35em;
+	padding: var( --wp--preset--spacing--30, 0.75rem );
+	background: var( --wp--preset--color--base, #ffffff );
+	border: 1px solid var( --gl-line );
+	border-radius: var( --gl-radius );
+}
+
+.gl-feed-item__actor a {
+	font-weight: 700;
+	color: var( --wp--preset--color--accent-1, #3858e9 );
+	text-decoration: none;
+}
+
+.gl-feed-item__actor a:hover,
+.gl-feed-item__actor a:focus-visible {
+	text-decoration: underline;
+}
+
+.gl-feed-item__verb {
+	opacity: 0.85;
+}
+
+.gl-feed-item__object {
+	font-weight: 600;
+}
+
+.gl-feed-item__time {
+	margin-inline-start: auto;
+	font-size: var( --wp--preset--font-size--small, 0.8125rem );
+	opacity: 0.6;
+}
+
+/* --------------------------------------------------------- Empty state */
+
+.gl-empty-state {
+	padding: var( --gl-gap-lg );
+	text-align: center;
+	border: 1px dashed var( --gl-line );
+	border-radius: var( --gl-radius );
+	background: var( --wp--custom--color--surface, rgba( 0, 0, 0, 0.02 ) );
+	color: var( --wp--preset--color--contrast, #1a1a1a );
+	font-size: var( --wp--preset--font-size--medium, 1rem );
+}
+
+/* -------------------------------------------------------------- Buttons */
+
+.gl-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.4em;
+	padding: var( --wp--preset--spacing--20, 0.5rem ) var( --wp--preset--spacing--30, 0.9rem );
+	border: 1px solid var( --gl-line );
+	border-radius: 6px;
+	background: var( --wp--preset--color--base, #ffffff );
+	color: var( --wp--preset--color--contrast, #1a1a1a );
+	font-size: var( --wp--preset--font-size--small, 0.9rem );
+	font-weight: 600;
+	cursor: pointer;
+	transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.gl-button:hover {
+	border-color: var( --wp--preset--color--accent-1, #3858e9 );
+}
+
+.gl-button:active {
+	transform: translateY( 1px );
+}
+
+.gl-button[disabled] {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.gl-button--primary {
+	background: var( --wp--preset--color--accent-1, #3858e9 );
+	color: var( --wp--preset--color--base, #ffffff );
+	border-color: transparent;
+}
+
+.gl-button--danger {
+	color: var( --wp--preset--color--accent-3, #b3261e );
+}
+
+.gl-follow-button.is-following {
+	background: var( --wp--preset--color--base, #ffffff );
+	color: var( --wp--preset--color--contrast, #1a1a1a );
+	border-color: var( --gl-line );
+}
+
+/* Visible focus for every interactive control (AC-019d). */
+.gl-button:focus-visible,
+.gl-tab:focus-visible,
+.gl-status-control:focus-visible,
+.gl-search__input:focus-visible,
+.gl-join__form input:focus-visible,
+.gl-feed-item__actor a:focus-visible {
+	outline: 3px solid var( --wp--preset--color--accent-1, #3858e9 );
+	outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------- Invites */
+
+.gl-invites {
+	margin-top: var( --gl-gap-lg );
+	padding: var( --gl-gap );
+	border: 1px solid var( --gl-line );
+	border-radius: var( --gl-radius );
+}
+
+.gl-invites__result {
+	margin-top: var( --wp--preset--spacing--20, 0.5rem );
+	word-break: break-all;
+	font-size: var( --wp--preset--font-size--small, 0.875rem );
+}
+
+/* ---------------------------------------------------------------- Join */
+
+.gl-join {
+	display: flex;
+	justify-content: center;
+}
+
+.gl-join__card {
+	width: 100%;
+	max-width: 26rem;
+	padding: var( --gl-gap-lg );
+	background: var( --wp--preset--color--base, #ffffff );
+	border: 1px solid var( --gl-line );
+	border-radius: var( --gl-radius );
+}
+
+.gl-field {
+	display: flex;
+	flex-direction: column;
+	gap: 0.35em;
+	margin-bottom: var( --gl-gap );
+}
+
+.gl-field input {
+	padding: var( --wp--preset--spacing--20, 0.5rem );
+	border: 1px solid var( --gl-line );
+	border-radius: 6px;
+	background: var( --wp--preset--color--base, #ffffff );
+	color: var( --wp--preset--color--contrast, #1a1a1a );
+	font-size: var( --wp--preset--font-size--medium, 1rem );
+}
+
+/* --------------------------------------------------------- Error banner */
+
+.gl-error-banner {
+	padding: var( --wp--preset--spacing--30, 0.75rem );
+	margin-bottom: var( --gl-gap );
+	border-radius: var( --gl-radius );
+	border: 1px solid var( --wp--preset--color--accent-3, #b3261e );
+	background: var( --wp--custom--color--surface, rgba( 179, 38, 30, 0.08 ) );
+	color: var( --wp--preset--color--accent-3, #b3261e );
+	font-weight: 600;
+}
+
+.gl-error-banner ul {
+	margin: 0;
+	padding-inline-start: 1.2em;
+}
+
+/* --------------------------------------------------------- Pagination */
+
+.gl-pagination {
+	display: flex;
+	gap: var( --wp--preset--spacing--20, 0.5rem );
+	justify-content: space-between;
+	margin-top: var( --gl-gap );
+}
+
+/* --------------------------------------------- Accessibility utilities */
+
+/*
+ * Visually-hidden labels use WordPress core's always-enqueued `.screen-reader-text`
+ * utility (shipped in wp-block-library, present on every front-end request) rather
+ * than a duplicate plugin-local class.
+ */
+
+.gl-is-loading {
+	opacity: 0.6;
+	pointer-events: none;
+}
+
+.gl-error {
+	margin-top: var( --wp--preset--spacing--20, 0.5rem );
+	color: var( --wp--preset--color--accent-3, #b3261e );
+	font-size: var( --wp--preset--font-size--small, 0.875rem );
+	font-weight: 600;
+}
+
+.gl-error:empty {
+	margin-top: 0;
+}
