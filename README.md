@@ -16,6 +16,8 @@ is pre-seeded for a self-contained demo; cover art is real imagery from IGDB's i
 
 **▶ [`game-collector-fable-demo.webm`](game-collector-fable-demo.webm)**
 
+![My Library — the member's landing page: cover art and per-game status](my-library.png)
+
 What it covers:
 
 - **My Library** — your games and cover art at a glance; tabs filter the grid by status.
