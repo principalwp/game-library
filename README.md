@@ -41,6 +41,8 @@ browser):
 
 **▶ [`game-library-demo.webm`](game-library-demo.webm)**
 
+![My Library — the member's landing page: cover art and per-game status](my-library.png)
+
 ---
 
 ## What it does
