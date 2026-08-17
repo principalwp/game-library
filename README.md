@@ -37,7 +37,7 @@ A ~38-second silent walkthrough, recorded against
 
 **▶ [`game-library-demo.webm`](game-library-demo.webm)**
 
-![My Library — the member's landing page: cover art and per-game status](my-library.png)
+![My Library — the member's landing page: cover art and per-game status](my-library.webp)
 
 What it covers: the cover-forward library at `/my-library/`, debounced IGDB
 search with one-click add at a chosen status, inline status changes, the
