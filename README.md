@@ -12,7 +12,7 @@ A ~30-second silent walkthrough recorded against
 [WordPress Playground](https://wordpress.github.io/wordpress-playground/). Game data
 is pre-seeded for a self-contained demo; cover art is real imagery from IGDB's image CDN.
 
-[![My Library — the member's landing page, with cover art and per-game status](game-collector-sol-my-library.png)](game-collector-sol-my-library.png)
+[![My Library — the member's landing page, with cover art and per-game status](my-library.png)](my-library.png)
 
 **▶ [`game-collector-sol-demo.webm`](game-collector-sol-demo.webm)**
 
